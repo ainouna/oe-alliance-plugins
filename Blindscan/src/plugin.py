@@ -32,6 +32,23 @@ except:
 	versionstring = about.getImageVersionString()
 	buildstring = about.getBuildVersionString()
 
+def getDistro():
+	try:
+		from enigma import getDistro as e2_getDistro
+		return e2_getDistro()
+	except:
+		try:
+			file = open('/etc/image-version', 'r')
+			lines = file.readlines()
+			file.close()
+			for x in lines:
+				splitted = x.split('=')
+				if splitted[0] == "comment":
+					result =  splitted[1].replace('\n','')
+		except:
+			result = None
+		return result
+
 #used for the XML file
 from time import strftime, time
 
@@ -55,7 +72,7 @@ class Blindscan(ConfigListScreen, Screen):
 		self.setup_title = _("Blindscan")
 		Screen.setTitle(self, _(self.setup_title))
 		self.skinName = "Setup"
-		self.current_play_service = self.session.nav.getCurrentlyPlayingServiceReference()
+		self.session.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
 
 		self.onChangedEntry = [ ]
 		self["HelpWindow"] = Pixmap()
@@ -349,7 +366,7 @@ class Blindscan(ConfigListScreen, Screen):
 		self.newConfig()
 
 	def keyCancel(self):
-		self.session.nav.playService(self.current_play_service)
+		self.session.nav.playService(self.session.postScanService)
 		for x in self["config"].list:
 			x[1].cancel()
 		self.close()
@@ -706,7 +723,7 @@ class Blindscan(ConfigListScreen, Screen):
 			flags |= eComponentScan.scanDontRemoveUnscanned
 		if self.scan_onlyfree.value:
 			flags |= eComponentScan.scanOnlyFree
-		self.session.open(ServiceScan, [{"transponders": tlist, "feid": feid, "flags": flags, "networkid": networkid}])
+		self.session.openWithCallback(self.startScanCallback, ServiceScan, [{"transponders": tlist, "feid": feid, "flags": flags, "networkid": networkid}])
 
 	def getKnownTransponders(self, pos):
 		tlist = []
@@ -914,17 +931,22 @@ class Blindscan(ConfigListScreen, Screen):
 		print "orb = ", orb
 		return orb
 		
-def main(session, **kwargs):
+	def startScanCallback(self, answer):
+		if answer:
+			self.session.nav.playService(self.session.postScanService)
+			self.close(True)
+		
+def main(session, close=None, **kwargs):
 	session.open(Blindscan)
 
 def BlindscanSetup(menuid, **kwargs):
 	if menuid == "scan":
-		return [(_("Blind Scan"), main, "blindscan", 25)]
+		return [(_("Blind scan"), main, "blindscan", 25, True)]
 	else:
 		return []
 
 def Plugins(**kwargs):
-	if (nimmanager.hasNimType("DVB-S")):
-		return PluginDescriptor(name=_("Blind Scan"), description="Scan cable provider channels", where = PluginDescriptor.WHERE_MENU, fnc=BlindscanSetup)
+	if nimmanager.hasNimType("DVB-S"):
+		return PluginDescriptor(name=_("Blind scan"), description=_("Scan cable provider channels"), where = PluginDescriptor.WHERE_MENU, fnc=BlindscanSetup)
 	else:
 		return []
