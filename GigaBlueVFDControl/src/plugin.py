@@ -443,6 +443,9 @@ class VFD_Giga:
 		self.Console = Console()
 
 		initVFD()
+		self.Timer = eTimer()
+		self.Timer.callback.append(self.delay_init)
+		self.Timer.start(5000, True)
 
 		global ChannelnumberInstance
 		if ChannelnumberInstance is None:
@@ -453,6 +456,10 @@ class VFD_Giga:
 
 	def abort(self):
 		print "[VFD-GIGA] aborting"
+
+	def delay_init(self):
+		print "[VFD-GIGA] delay init on boot"
+		initVFD()
 
 	config.misc.standbyCounter.addNotifier(standbyCounterChanged, initial_call = False)
 
