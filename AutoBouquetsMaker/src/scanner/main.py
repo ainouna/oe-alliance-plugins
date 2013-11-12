@@ -219,17 +219,18 @@ class AutoBouquetsMaker(Screen):
 
 		nimList.reverse() # start from the last
 		for slotid in nimList:
-			sats = nimmanager.getSatListForNim(slotid)
-			for sat in sats:
-				if sat[0] == transponder["orbital_position"]:
-					if current_slotid == -1:	# mark the first valid slotid in case of no other one is free
-						current_slotid = slotid
+			if slotid <= 3: # only support first 4 frontends.
+				sats = nimmanager.getSatListForNim(slotid)
+				for sat in sats:
+					if sat[0] == transponder["orbital_position"]:
+						if current_slotid == -1:	# mark the first valid slotid in case of no other one is free
+							current_slotid = slotid
 
-					self.rawchannel = resmanager.allocateRawChannel(slotid)
-					if self.rawchannel:
-						print>>log, "[AutoBouquetsMaker] Nim found on slot id %d with sat %s" % (slotid, sat[1])
-						current_slotid = slotid
-						break
+						self.rawchannel = resmanager.allocateRawChannel(slotid)
+						if self.rawchannel:
+							print>>log, "[AutoBouquetsMaker] Nim found on slot id %d with sat %s" % (slotid, sat[1])
+							current_slotid = slotid
+							break
 
 			if self.rawchannel:
 				break
@@ -455,6 +456,7 @@ class AutoAutoBouquetsMakerTimer:
 		# If we're close enough, we're okay...
 		atLeast = 0
 		if wake - now < 60:
+			atLeast = 60
 			print>>log, "[AutoBouquetsMaker] AutoBouquetsMaker onTimer occured at", strftime("%c", localtime(now))
 			from Screens.Standby import inStandby
 			if not inStandby:
@@ -463,8 +465,7 @@ class AutoAutoBouquetsMakerTimer:
 				ybox.setTitle('Scheduled AutoBouquetsMaker.')
 			else:
 				self.doAutoBouquetsMaker(True)
-		else:
-			self.autobouquetsmakerdate(60)
+		self.autobouquetsmakerdate(atLeast)
 
 	def doAutoBouquetsMaker(self, answer):
 		now = int(time())
