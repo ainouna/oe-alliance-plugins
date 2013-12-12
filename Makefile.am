@@ -38,6 +38,10 @@ if INI
 SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade HbbTV
 endif
 
+if MIRACLEBOX
+SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade
+endif
+
 if INIHDP
 SUBDIRS += TransCodingSetup
 endif
