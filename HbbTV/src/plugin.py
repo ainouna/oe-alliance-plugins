@@ -182,6 +182,7 @@ class OpCodeSet:
 			,"OP_HBBTV_TITLE"					: 0x0006
 			,"OP_HBBTV_RETRY_OPEN_URL"			: 0x0009
 			,"OP_HBBTV_CHANGE_CHANNEL"			: 0x000A
+			,"OP_HBBTV_ABORT_SIG"				: 0x000B
 			,"OP_OIPF_GET_CHANNEL_INFO_URL"		: 0x0101
 			,"OP_OIPF_GET_CHANNEL_INFO_AIT"		: 0x0102
 			,"OP_OIPF_GET_CHANNEL_INFO_LIST"	: 0x0103
@@ -222,6 +223,7 @@ class OpCodeSet:
 			,0x0006 : "OP_HBBTV_TITLE"
 			,0x0009 : "OP_HBBTV_RETRY_OPEN_URL"
 			,0x000A : "OP_HBBTV_CHANGE_CHANNEL"
+			,0x000B : "OP_HBBTV_ABORT_SIG"
 			,0x0101 : "OP_OIPF_GET_CHANNEL_INFO_URL"
 			,0x0102 : "OP_OIPF_GET_CHANNEL_INFO_AIT"
 			,0x0103 : "OP_OIPF_GET_CHANNEL_INFO_LIST"
@@ -444,29 +446,30 @@ class HandlerHbbTV(Handler):
 		self._session = session
 		self.opcode = OpCodeSet()
 		self.handle_map = {
-			0x0001 : self._cb_handleCloseHbbTVBrowser,
-			0x0006 : self._cb_handleSetPageTitle,
-			0x0009 : self._cb_handleHbbTVRetryOpen,
-			0x000A : self._cb_handleHbbTVChangeChannel,
-			0x0101 : self._cb_handleGetChannelInfoForUrl,
-			0x0102 : self._cb_handleGetChannelInfoForAIT,
-			0x0103 : self._cb_handleGetChannelInfoList,
-			0x0201 : self._cb_handleVODPlayerURI,
-			0x0202 : self._cb_handleVODPlayerPlay,
-			0x0203 : self._cb_handleVODPlayerStop,
-			0x0204 : self._cb_handleVODPlayerPlayPause,
-			0x0401 : self._cb_handleDVBAppVolUp,
-			0x0402 : self._cb_handleDVBAppVolDown,
-			0x0403 : self._cb_handleDVBAppSetVol,
-			0x0208 : self._cb_handleVODSpeedCtrl,
-			0x0209 : self._cb_handleVODSeekCtrl,
-			0x0501 : self._cb_handleSystemOutOfMemory,
-			0x0502 : self._cb_handleSystemNotufyMyPID,
-			0x0309 : self._cb_handleShowVirtualKeyboard,
-			0x030B : self._cb_handlePasteVirtualKeyboard,
-			0x030E : self._cb_handleBrowserMenuReq,
-			0x0601 : self._cb_handleVideobackendEnable,
-			0x0602 : self._cb_handleVideobackendDisable
+			 0x0001 : self._cb_handleCloseHbbTVBrowser
+			,0x0006 : self._cb_handleSetPageTitle
+			,0x0009 : self._cb_handleHbbTVRetryOpen
+			,0x000A : self._cb_handleHbbTVChangeChannel
+			,0x000B : self._cb_handleHbbTVAbortSig
+			,0x0101 : self._cb_handleGetChannelInfoForUrl
+			,0x0102 : self._cb_handleGetChannelInfoForAIT
+			,0x0103 : self._cb_handleGetChannelInfoList
+			,0x0201 : self._cb_handleVODPlayerURI
+			,0x0202 : self._cb_handleVODPlayerPlay
+			,0x0203 : self._cb_handleVODPlayerStop
+			,0x0204 : self._cb_handleVODPlayerPlayPause
+			,0x0401 : self._cb_handleDVBAppVolUp
+			,0x0402 : self._cb_handleDVBAppVolDown
+			,0x0403 : self._cb_handleDVBAppSetVol
+			,0x0208 : self._cb_handleVODSpeedCtrl
+			,0x0209 : self._cb_handleVODSeekCtrl
+			,0x0501 : self._cb_handleSystemOutOfMemory
+			,0x0502 : self._cb_handleSystemNotufyMyPID
+			,0x0309 : self._cb_handleShowVirtualKeyboard
+			,0x030B : self._cb_handlePasteVirtualKeyboard
+			,0x030E : self._cb_handleBrowserMenuReq
+			,0x0601 : self._cb_handleVideobackendEnable
+			,0x0602 : self._cb_handleVideobackendDisable
 		}
 		self._on_close_cb = None
 		self._on_set_title_cb = None
@@ -477,6 +480,9 @@ class HandlerHbbTV(Handler):
 		self._timer_retry_open = eTimer()
 		self._timer_paste_vkbd = eTimer()
 		self._curren_title = None
+		self._max_volume  = -1
+		self._soft_volume = -1
+		self._videobackend_activate = False
 
 	def _handle_dump(self, handle, opcode, data=None):
 		if True: return
@@ -519,12 +525,15 @@ class HandlerHbbTV(Handler):
 		service = self._session.nav.getCurrentlyPlayingServiceReference()
 		setBeforeService(service)
 		self._session.nav.stopService()
+		self._videobackend_activate = True
 		return (0, "OK")
 
 	def _cb_handleVideobackendDisable(self, opcode, data):
 		self._handle_dump(self._cb_handleVideobackendDisable, opcode, data)
 		before_service = getBeforeService()
-		self._session.nav.playService(before_service)
+		if before_service is not None:
+			self._session.nav.playService(before_service)
+		self._videobackend_activate = False
 		return (0, "OK")
 
 	def _cb_handleHbbTVChangeChannel(self, opcode, data):
@@ -656,21 +665,40 @@ class HandlerHbbTV(Handler):
 			raise Exception("This stream is not support trick play.")
 		return (0, "OK")
 
+	def SetVolume(self, volume):
+		if self._max_volume < 0:
+			self._max_volume = VolumeControl.instance.volctrl.getVolume()
+
+		self._max_volume += volume
+		if self._max_volume > 100:
+			self._max_volume = 100
+		elif self._max_volume < 0:
+			self._max_volume = 0
+
+		if self._soft_volume > 0:
+			v = int((self._max_volume * self._soft_volume) / 100)
+			VolumeControl.instance.volctrl.setVolume(v, v)
+		else:	VolumeControl.instance.volctrl.setVolume(self._max_volume, self._max_volume)
+
 	def _cb_handleDVBAppVolUp(self, opcode, data):
 		self._handle_dump(self._cb_handleDVBAppVolUp, opcode, data)
-		vcm = VolumeControl.instance
-		vcm.volUp()
+		self.SetVolume(5)
 		return (0, "OK")
 
 	def _cb_handleDVBAppVolDown(self, opcode, data):
 		self._handle_dump(self._cb_handleDVBAppVolDown, opcode, data)
-		vcm = VolumeControl.instance
-		vcm.volDown()
+		self.SetVolume(-5)
 		return (0, "OK")
 
 	def _cb_handleDVBAppSetVol(self, opcode, data):
 		self._handle_dump(self._cb_handleDVBAppSetVol, opcode, data)
-		v = int(data)
+		if self._max_volume < 0:
+			self._max_volume = VolumeControl.instance.volctrl.getVolume()
+		self._soft_volume = int(data)
+
+		v = 0
+		if self._soft_volume > 0 and self._max_volume > 0:
+			v = int((self._max_volume * self._soft_volume) / 100)
 		VolumeControl.instance.volctrl.setVolume(v, v)
 		return (0, "OK")
 
@@ -707,6 +735,11 @@ class HandlerHbbTV(Handler):
 						self._on_set_title_cb.remove(x)
 		return (0, "OK")
 
+	def _cb_handleHbbTVAbortSig(self, opcode, data):
+		self._cb_handleCloseHbbTVBrowser(opcode, data)
+		global __gval__
+		return (0, struct.pack('!II', __gval__.resX, __gval__.resY));
+
 	def _cb_handleCloseHbbTVBrowser(self, opcode, data):
 		self._timer_retry_open.stop()
 		try:
@@ -724,11 +757,12 @@ class HandlerHbbTV(Handler):
 
 		command_util = getCommandUtil()
 		command_util.sendCommand('OP_HBBTV_FULLSCREEN', None)
+		if self._videobackend_activate == False:
+			before_service = getBeforeService()
+			if before_service is not None:
+				self._session.nav.playService(before_service)
+				self._vod_uri = None
 
-		before_service = getBeforeService()
-		if before_service is not None:
-			self._session.nav.playService(before_service)
-			self._vod_uri = None
 		#restoreResolution()
 		return (0, "OK")
 
@@ -863,7 +897,7 @@ class HbbTVWindow(Screen, InfoBarNotifications):
 			self._vod_length = length
 			if position == -1 and length == -1:
 				raise Exception("Can't get play status")
-			#print getTimeString(position), "/", getTimeString(length)
+			#print position, "/", length, " - ", getTimeString(position), "/", getTimeString(length)
 			self._ssm.setStatus(position, length, 1)
 		except Exception, ErrMsg:
 			print ErrMsg
@@ -883,6 +917,8 @@ class HbbTVWindow(Screen, InfoBarNotifications):
 		self._currentServicePositionTimer.stop()
 
 	def _layoutFinished(self):
+		global __gval__
+		__gval__.hbbtv_handelr._soft_volume = -1
 		self.setTitle(_('HbbTV Plugin'))
 		command_util = getCommandUtil()
 		profile = self._profile
@@ -935,6 +971,7 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 
 		Screen.__init__(self, session)
 		InfoBarNotifications.__init__(self)
+
 		self._session = session
 
 		self._restart_opera()
@@ -961,12 +998,11 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 			})
 		self._applicationList = None
 
-		self.mVuplusBox = False
-		f = open("/etc/issue")
-		issue = f.read()
-		f.close()
-		if(issue.startswith("Vuplus")):
-			self.mVuplusBox = True
+		try:
+			from Screens.InfoBarGenerics import gHbbtvApplication
+			self.mVuplusBox = gHbbtvApplication.getUseAit()
+		except:
+			self.mVuplusBox = False
 
 	def _cb_detectedAIT(self):
 		name = self._cb_ready_for_ait()
@@ -1003,11 +1039,11 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 				name = ""
 
 			pmtid = info.getInfo(iServiceInformation.sPMTPID)
-			demux = 0#info.getInfoString(iServiceInformation.sLiveStreamDemuxId)
+			demux = info.getInfoString(iServiceInformation.sLiveStreamDemuxId)
 
 			from aitreader import eAITSectionReader
 			reader = eAITSectionReader(demux, pmtid, sid)
-			if reader.doOpen():
+			if reader.doOpen(info, self.mVuplusBox):
 				reader.doParseApplications()
 				reader.doDump()
 			else:	print "no data!!"
@@ -1071,6 +1107,7 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 		global HBBTVAPP_PATH
 		try:	os.system('%s/launcher stop'%(HBBTVAPP_PATH))
 		except: pass
+		return True
 
 	def _restart_opera(self):
 		global HBBTVAPP_PATH
@@ -1082,8 +1119,10 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 	def getStartHbbTVUrl(self):
 		url, self._profile = None, 0
 		if self._applicationList is not None:
-			self._profile = self._applicationList[0]["profile"]
-			url = self._applicationList[0]["url"]
+			for u in self._applicationList:
+				if u["control"] in (1, -1):
+					url = u["url"]
+					self._profile = u["profile"]
 		if url is None:
 			service = self._session.nav.getCurrentService()
 			info = service and service.info()
@@ -1765,11 +1804,11 @@ class BrowserHelpWindow(Screen, HelpableScreen):
 		self.setHelpModeActions(self.MODE_KEYBOARD)
 
 class OperaBrowser(Screen):
-	MENUBAR_ITEM_WIDTH = 150
+	MENUBAR_ITEM_WIDTH  = 150
 	MENUBAR_ITEM_HEIGHT = 30
-	SUBMENULIST_WIDTH = 200
-	SUBMENULIST_HEIGHT = 25
-	SUBMENULIST_NEXT = 2
+	SUBMENULIST_WIDTH   = 200
+	SUBMENULIST_HEIGHT  = 25
+	SUBMENULIST_NEXT    = 2
 
 	# menulist->position->y : MENUBAR_ITEM_HEIGHT+30
 	# menulist->size->x     : SUBMENULIST_WIDTH
@@ -1998,6 +2037,9 @@ class OperaBrowser(Screen):
 		self._terminatedBrowser = False
 		self._enableKeyEvent = False
 
+		global __gval__
+		__gval__.hbbtv_handelr._soft_volume = -1
+
 	def _on_close_window(self):
 		self._onCloseTimer.start(1000)
 
@@ -2119,7 +2161,7 @@ class OperaBrowser(Screen):
 			self.setCurrentListView(2)
 			self.currentListView.setList(self.setSubListOnView())
 			self.currentListView.resize(self.SUBMENULIST_WIDTH, self.SUBMENULIST_HEIGHT*len(self.lvSubMenuItems)+5)
-			self.currentListView.move(self.MENUBAR_ITEM_WIDTH*self.menubarCurrentIndex + self.SUBMENULIST_WIDTH+self.SUBMENULIST_NEXT + 50, self.MENUBAR_ITEM_HEIGHT+30+(parentSelectedIndex*self.SUBMENULIST_HEIGHT))
+			self.currentListView.move(self.MENUBAR_ITEM_WIDTH*self.menubarCurrentIndex + self.SUBMENULIST_WIDTH+self.SUBMENULIST_NEXT + 50,self.MENUBAR_ITEM_HEIGHT+30+(parentSelectedIndex*self.SUBMENULIST_HEIGHT))
 			self.toggleSubListView()
 			return
 		self.currentListView.pageUp()
@@ -2325,7 +2367,7 @@ class YoutubeTVSettings(ConfigListScreen, Screen):
     def makeConfigList(self):
 	self.menulist = []
 	entryUri = getConfigListEntry(_("YouTube TV URL"), config.plugins.youtubetv.uri)
-	entryShowHelp = getConfigListEntry(_("Do not show YouTube TV Stater again"), config.plugins.youtubetv.showhelp)
+	entryShowHelp = getConfigListEntry(_("Do not show YouTube TV Starter again"), config.plugins.youtubetv.showhelp)
 	self.menulist.append(entryUri)
 	self.menulist.append(entryShowHelp)
 
@@ -2449,7 +2491,7 @@ def plugin_extension_browser_config(session, **kwargs):
 def Plugins(path, **kwargs):
 	l = []
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, needsRestart=True, fnc=auto_start_main))
-	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main))
+	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=showYoutubeTV))
 	l.append(PluginDescriptor(name=_("YouTube TV Settings"), where=PluginDescriptor.WHERE_PLUGINMENU, fnc=youtube_setting_main))
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
 	l.append(PluginDescriptor(name=_("HbbTV Applications"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, needsRestart=True, fnc=plugin_extension_start_application))
