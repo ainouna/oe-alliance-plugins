@@ -107,7 +107,7 @@ class Manager():
 					prefix = providers[provider_key]["name"]
 
 				current_bouquet_key = self.providerConfigs[provider_key].getArea()
-				if current_bouquet_key in providers[provider_key]["bouquets"]:
+				if current_bouquet_key in providers[provider_key]["bouquets"] and providers[provider_key]["protocol"] in ("sky", "freesat"):
 					current_bouquet = providers[provider_key]["bouquets"][current_bouquet_key]["bouquet"]
 					current_region = providers[provider_key]["bouquets"][current_bouquet_key]["region"]
 				else:
@@ -127,13 +127,17 @@ class Manager():
 									preferred_order = swapchannels_set["preferred_order"]
 									break
 
+				if current_bouquet_key.startswith('hd'):
+					channelsontop = providers[provider_key]["hdchannelsontop"],
+				else:
+					channelsontop = providers[provider_key]["sdchannelsontop"],
 				writer.buildBouquets(self.path,
 						self.providerConfigs[provider_key],
 						self.services[provider_key],
 						providers[provider_key]["sections"],
 						provider_key,
 						preferred_order,
-						providers[provider_key]["channelsontop"],
+						channelsontop,
 						bouquetsToHide,
 						prefix)
 
@@ -163,7 +167,6 @@ class Manager():
 				scanner.setDemuxer(self.demuxer)
 				scanner.setFrontend(self.frontend)
 				scanner.setDVBType(providers[provider_key]["streamtype"])
-
 				scanner.setNitPid(providers[provider_key]["transponder"]["nit_pid"])
 				scanner.setNitCurrentTableId(providers[provider_key]["transponder"]["nit_current_table_id"])
 				scanner.setNitOtherTableId(providers[provider_key]["transponder"]["nit_other_table_id"])
@@ -173,11 +176,15 @@ class Manager():
 					scanner.setSdtCurrentTableId(providers[provider_key]["transponder"]["sdt_current_table_id"])
 					scanner.setSdtOtherTableId(providers[provider_key]["transponder"]["sdt_other_table_id"])
 
-					tmp = scanner.updateTransponders(self.transponders, True)
+					if providers[provider_key]["streamtype"] == 'dvbc':
+						bouquet = providers[provider_key]["bouquets"][bouquet_key]
+						tmp = scanner.updateTransponders(self.transponders, True, bouquet["netid"],bouquet["bouquettype"])
+					else:
+						tmp = scanner.updateTransponders(self.transponders, True)
 					self.services[provider_key] = scanner.updateAndReadServicesLCN(
 							providers[provider_key]["namespace"], self.transponders,
 							providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
-							tmp["logical_channel_number_dict"])
+							tmp["logical_channel_number_dict"], tmp["service_dict_tmp"])
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0
 

@@ -20,7 +20,7 @@
 # for localized messages
 from . import _
 
-from Components.config import config, ConfigYesNo, ConfigSubsection, ConfigSelection
+from Components.config import config, ConfigYesNo, ConfigSubsection, ConfigSelection, ConfigIP
 from Plugins.Plugin import PluginDescriptor
 from ui import OnDemand_Screen
 
@@ -32,6 +32,7 @@ config.ondemand.ShowRTEPlayer = ConfigYesNo(default = True)
 config.ondemand.Show3Player = ConfigYesNo(default = True)
 config.ondemand.ShowBBCiPlayer = ConfigYesNo(default = True)
 config.ondemand.ShowITVPlayer = ConfigYesNo(default = True)
+config.ondemand.Show4ODPlayer = ConfigYesNo(default = True)
 config.ondemand.ShowiViewPlayer = ConfigYesNo(default = True)
 config.ondemand.ShowImages = ConfigYesNo(default = True)
 config.ondemand.PreferredQuality = ConfigSelection(default = "800", choices = [("400", _("Very Low")), ("480", _("Low")), ("800", _("Normal")), ("1500", _("High")), ("3200", _("HD"))])
@@ -43,6 +44,8 @@ config.ondemand.ShowShoutcastLogos = ConfigYesNo(default = True)
 config.ondemand.ShowShoutcastDefault = ConfigYesNo(default = True)
 config.ondemand.ShowTuneinLogos = ConfigYesNo(default = True)
 config.ondemand.ShowTuneinDefault = ConfigYesNo(default = True)
+config.ondemand.PrimaryDNS = ConfigIP(default = [0,0,0,0])
+config.ondemand.SecondaryDNS = ConfigIP(default = [0,0,0,0])
 		
 def OnDemanMenu(menuid):
 	if menuid == "mainmenu":

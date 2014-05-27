@@ -1,18 +1,14 @@
 <provider>
-	<name>Sky Scotland</name>
+	<name>Sky Wales</name>
 	<streamtype>dvbs</streamtype>
 	<protocol>sky</protocol>
 	<transponder frequency="11778000" symbol_rate="27500000" polarization="1"
 		fec_inner="2" orbital_position="282" inversion="2" system="0"
 		modulation="1" roll_off="0" pilot="2" />
-	<configurations>
-		<configuration key="hd_border_scotland" bouquet="0x1006" region="0x24" namespace="0x11a0000">Border Scotland HD</configuration>
-		<configuration key="sd_border_scotland" bouquet="0x1002" region="0x24" namespace="0x11a0000">Border Scotland SD</configuration>
-		<configuration key="hd_scottish_west" bouquet="0x1006" region="0x25" namespace="0x11a0000">Scottish West HD</configuration>
-		<configuration key="sd_scottish_west" bouquet="0x1002" region="0x25" namespace="0x11a0000">Scottish West SD</configuration>
-		<configuration key="hd_scottish_east" bouquet="0x1006" region="0x26" namespace="0x11a0000">Scottish East HD</configuration>
-		<configuration key="sd_scottish_east" bouquet="0x1002" region="0x26" namespace="0x11a0000">Scottish East SD</configuration>
-	</configurations>
+	<dvbsconfigs>
+		<configuration key="hd_htv_wales" bouquet="0x1007" region="0x2b" namespace="0x11a0000">HTV Wales HD</configuration>
+		<configuration key="sd_htv_wales" bouquet="0x1003" region="0x2b" namespace="0x11a0000">HTV Wales SD</configuration>
+	</dvbsconfigs>
 	<sections>
 		<section number="101">Entertainment</section>
 		<section number="240">Lifestyle and Culture</section>
@@ -37,19 +33,23 @@
 		<section number="1030">Sky Anytime</section>
 	</sections>
 	<!-- channelsontop affect only HD bouquets -->
-	<channelsontop>
+	<hdchannelsontop>
 		<channel number="101" />
 		<channel number="142" />
-		<channel number="230" />
+		<channel number="178" />
 		<channel number="171" />
-	</channelsontop>
+	</hdchannelsontop>
+	<sdchannelsontop>
+		<channel number="141" />
+		<channel number="142" />
+		<channel number="178" />
+		<channel number="230" />
+	</sdchannelsontop>
 	<!-- swapchannels affect only main bouquet (the normal version) -->
 	<swapchannels>
-		<filter bouquet="0x1006" region="0x24" />
-		<filter bouquet="0x1006" region="0x25" />
-		<filter bouquet="0x1006" region="0x26" />
+		<filter bouquet="0x1007" region="0x2b" />
 		<channel number="142" with="102" />
-		<channel number="230" with="104" />
+		<channel number="178" with="103" />
 		<channel number="171" with="105" />
 	</swapchannels>
 	<servicehacks>

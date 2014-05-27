@@ -16,6 +16,8 @@ from Screens.InfoBar import InfoBar
 from time import localtime, time
 from Tools.Directories import fileExists
 
+from boxbranding import getBoxType
+
 import Screens.Standby
 
 config.plugins.VFD_ini = ConfigSubsection()
@@ -258,7 +260,7 @@ class VFD_INI:
 def main(menuid):
 	if menuid != "system":
 		return [ ]
-	return [(_("VFD_INI"), startVFD, "VFD_INI", None)]
+	return [(_("LED Display Setup"), startVFD, "VFD_INI", None)]
 
 def startVFD(session, **kwargs):
 	session.open(VFD_INISetup)
@@ -293,12 +295,8 @@ def sessionstart(reason, **kwargs):
 	controliniVfd()
 
 def Plugins(**kwargs):
-		if fileExists("/proc/stb/fp/version"):
-			file = open("/proc/stb/fp/version")
-			version = file.read().strip().lower()
-			file.close()
-		if version.startswith('2'):
-			return []
-		else:
+		if getBoxType() in ('xpeedlx1'):
 			return [ PluginDescriptor(where=[PluginDescriptor.WHERE_AUTOSTART, PluginDescriptor.WHERE_SESSIONSTART], fnc=sessionstart),
-				PluginDescriptor(name="VFD_INI", description="Change VFD display settings",where = PluginDescriptor.WHERE_MENU, fnc = main) ]
+				PluginDescriptor(name="LED Display Setup", description="Change VFD display settings",where = PluginDescriptor.WHERE_MENU, fnc = main) ]
+		else:
+			return []

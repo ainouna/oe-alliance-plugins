@@ -14,6 +14,10 @@ if XTREND
 SUBDIRS += XtrendFancontrol Blindscan XtrendRemote
 endif
 
+if MUTANT2400
+SUBDIRS += XtrendFancontrol XtrendRemote
+endif
+
 if ODIN
 SUBDIRS += XtrendFancontrol Blindscan
 endif
@@ -22,28 +26,20 @@ if ODINM7
 SUBDIRS += OdinM7VFDControl
 endif
 
-if ODINM6
-SUBDIRS += OdinM7VFDControl
+if EW7358
+SUBDIRS += EWVFDControl
 endif
 
 if INIHDE
 SUBDIRS += INIVFDControl
 endif
 
-if ENFINITY
-SUBDIRS += EVOVFDControl
-endif
-
-if VENTON
-SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade
+if INIHDE2
+SUBDIRS += INIVFDControl
 endif
 
 if INI
 SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade HbbTV
-endif
-
-if MIRACLEBOX
-SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade
 endif
 
 if INIHDP
@@ -71,7 +67,7 @@ SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup Blindscan
 endif
 
 if GIGABLUE
-SUBDIRS += GigaBlueVFDControl Blindscan
+SUBDIRS += GigaBlueVFDControl Blindscan AudioEffect
 endif
 
 if XP1000
@@ -80,4 +76,20 @@ endif
 
 if HAVE_TEMPFANCONTROL
 SUBDIRS += TempFanControl
+endif
+
+if GBQUADPLUS
+SUBDIRS += AudioEffect TransCodingSetup
+endif
+
+if GBQUAD
+SUBDIRS += AudioEffect TransCodingSetup
+endif
+
+if GB800SEPLUS
+SUBDIRS += AudioEffect
+endif
+
+if GB800UEPLUS
+SUBDIRS += AudioEffect
 endif

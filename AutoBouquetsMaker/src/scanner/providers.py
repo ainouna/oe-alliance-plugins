@@ -36,7 +36,8 @@ class Providers():
 			provider = {}
 			provider["key"] = filename[:-4]
 			provider["swapchannels"] = []
-			provider["channelsontop"] = []
+			provider["hdchannelsontop"] = []
+			provider["sdchannelsontop"] = []
 			if dom.documentElement.nodeType == dom.documentElement.ELEMENT_NODE and dom.documentElement.tagName == "provider":
 				for node in dom.documentElement.childNodes:
 					if node.nodeType != node.ELEMENT_NODE:
@@ -54,7 +55,7 @@ class Providers():
 						node.normalize()
 						if len(node.childNodes) == 1 and node.childNodes[0].nodeType == node.TEXT_NODE and node.childNodes[0].data in self.VALID_PROTOCOLS:
 							provider["protocol"] = node.childNodes[0].data
-							if provider["protocol"] != "sky" and  provider["protocol"] != "freesat":	# prepare an empty dictionary for bouquets
+							if provider["protocol"] not in ("sky", "freesat") and provider["streamtype"] not in ("dvbc", "dvbt"):	# prepare an empty dictionary for bouquets
 								provider["bouquets"] = {}
 							else:
 								provider["namespace"] = 0
@@ -131,7 +132,17 @@ class Providers():
 						if len(transponder.keys()) in (20, 16):
 							provider["transponder"] = transponder
 
-					elif node.tagName == "configurations":
+					elif node.tagName == "bouquettype":
+						node.normalize()
+						if len(node.childNodes) == 1 and node.childNodes[0].nodeType == node.TEXT_NODE:
+							provider["bouquettype"] = node.childNodes[0].data.encode("utf-8")
+
+					elif node.tagName == "netid":
+						node.normalize()
+						if len(node.childNodes) == 1 and node.childNodes[0].nodeType == node.TEXT_NODE:
+							provider["netid"] = node.childNodes[0].data.encode("utf-8")
+
+					elif node.tagName == "dvbsconfigs":
 						provider["bouquets"] = {}
 						for node2 in node.childNodes:
 							if node2.nodeType == node2.ELEMENT_NODE and node2.tagName == "configuration":
@@ -152,6 +163,103 @@ class Providers():
 
 								if len(configuration.keys()) == 5:
 									provider["bouquets"][configuration["key"]] = configuration
+
+					elif node.tagName == "dvbcconfigs":
+						provider["bouquets"] = {}
+						transponder = {}
+						transponder["nit_pid"] = 0x10
+						transponder["nit_current_table_id"] = 0x40
+						transponder["nit_other_table_id"] = 0x41
+						transponder["sdt_pid"] = 0x11
+						transponder["sdt_current_table_id"] = 0x42
+						transponder["sdt_other_table_id"] = 0x46
+						transponder["bat_pid"] = 0x11
+						transponder["bat_table_id"] = 0x4a
+						for node2 in node.childNodes:
+							if node2.nodeType == node2.ELEMENT_NODE and node2.tagName == "configuration":
+								configuration = {}
+								for i in range(0, node2.attributes.length):
+									if node2.attributes.item(i).name == "key":
+										configuration["key"] = node2.attributes.item(i).value
+									elif node2.attributes.item(i).name == "netid":
+										configuration["netid"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "bouquettype":
+										configuration["bouquettype"] = node2.attributes.item(i).value
+									elif node2.attributes.item(i).name == "frequency":
+										configuration["frequency"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "symbol_rate":
+										configuration["symbol_rate"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "fec_inner":
+										configuration["fec_inner"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "inversion":
+										configuration["inversion"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "system":
+										configuration["system"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "modulation":
+										configuration["modulation"] = int(node2.attributes.item(i).value)
+
+								node2.normalize()
+								if len(node2.childNodes) == 1 and node2.childNodes[0].nodeType == node2.TEXT_NODE:
+									configuration["name"] = node2.childNodes[0].data
+
+								if len(configuration.keys()) == 10:
+									provider["bouquets"][configuration["key"]] = configuration
+
+						if len(transponder.keys()) == 8:
+							provider["transponder"] = transponder
+
+					elif node.tagName == "dvbtconfigs":
+						provider["bouquets"] = {}
+						transponder = {}
+						transponder["nit_pid"] = 0x10
+						transponder["nit_current_table_id"] = 0x40
+						transponder["nit_other_table_id"] = 0x00
+						transponder["sdt_pid"] = 0x11
+						transponder["sdt_current_table_id"] = 0x42
+						transponder["sdt_other_table_id"] = 0x46
+						transponder["bat_pid"] = 0x11
+						transponder["bat_table_id"] = 0x4a
+
+						for node2 in node.childNodes:
+							if node2.nodeType == node2.ELEMENT_NODE and node2.tagName == "configuration":
+								configuration = {}
+								for i in range(0, node2.attributes.length):
+									if node2.attributes.item(i).name == "key":
+										configuration["key"] = node2.attributes.item(i).value
+									elif node2.attributes.item(i).name == "frequency":
+										configuration["frequency"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "inversion":
+										configuration["inversion"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "modulation":
+										configuration["modulation"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "system":
+										configuration["system"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "bandwidth":
+										configuration["bandwidth"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "code_rate_hp":
+										configuration["code_rate_hp"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "code_rate_lp":
+										configuration["code_rate_lp"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "transmission_mode":
+										configuration["transmission_mode"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "guard_interval":
+										configuration["guard_interval"] = int(node2.attributes.item(i).value)
+									elif node2.attributes.item(i).name == "hierarchy":
+										configuration["hierarchy"] = int(node2.attributes.item(i).value)
+
+								node2.normalize()
+								if len(node2.childNodes) == 1 and node2.childNodes[0].nodeType == node2.TEXT_NODE:
+									configuration["name"] = node2.childNodes[0].data
+
+								# print 'PPPP:',len(configuration.keys())
+								if len(configuration.keys()) == 12:
+									provider["bouquets"][configuration["key"]] = configuration
+
+						# print 'OOO:',len(transponder.keys())
+						if len(transponder.keys()) == 8:
+							provider["transponder"] = transponder
+						# print 'provider["bouquets"]',provider["bouquets"]
+
 
 					elif node.tagName == "sections":
 						provider["sections"] = {}
@@ -201,15 +309,22 @@ class Providers():
 
 						provider["swapchannels"].append(swapchannels_set)
 
-					elif node.tagName == "channelsontop":
-						provider["channelsontop"] = []
-
+					elif node.tagName == "hdchannelsontop":
+						provider["hdchannelsontop"] = []
 						for node2 in node.childNodes:
 							if node2.nodeType == node2.ELEMENT_NODE and node2.tagName == "channel":
 								for i in range(0, node2.attributes.length):
 									if node2.attributes.item(i).name == "number":
-										provider["channelsontop"].append(int(node2.attributes.item(i).value))
+										provider["hdchannelsontop"].append(int(node2.attributes.item(i).value))
 
+					elif node.tagName == "sdchannelsontop":
+						provider["sdchannelsontop"] = []
+						for node2 in node.childNodes:
+							if node2.nodeType == node2.ELEMENT_NODE and node2.tagName == "channel":
+								for i in range(0, node2.attributes.length):
+									if node2.attributes.item(i).name == "number":
+										provider["sdchannelsontop"].append(int(node2.attributes.item(i).value))
+										
 					elif node.tagName == "servicehacks":
 						node.normalize()
 						for i in range(0, len(node.childNodes)):
