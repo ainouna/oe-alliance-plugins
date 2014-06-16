@@ -2450,7 +2450,7 @@ def showYoutubeTV(session, **kwargs):
 				setBeforeService(service.toString())
 				session.nav.stopService()
 			else:	setBeforeService(service)
-			setPluginBrowser(session.openWithCallback(clearBrowserData, OperaBrowser, config.plugins.youtubetv.uri.value, True))
+			setPluginBrowser(session.openWithCallback(clearBrowserData, OperaBrowser, config.plugins.youtubetv.uri.value))
 	if config.plugins.youtubetv.showhelp.value == True:
 		cbYoutubeTVClose(True)
 	else:	session.openWithCallback(cbYoutubeTVClose, YoutubeTVWindow)
