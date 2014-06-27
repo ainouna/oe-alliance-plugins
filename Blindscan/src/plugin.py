@@ -949,8 +949,8 @@ class Blindscan(ConfigListScreen, Screen):
 		
 	def startScanCallback(self, answer):
 		if answer:
-		self.session.nav.playService(self.session.postScanService)
-		self.close(True)
+			self.session.nav.playService(self.session.postScanService)
+			self.close(True)
 		
 	def startDishMovingIfRotorSat(self):
 		orb_pos = self.getOrbPos()
