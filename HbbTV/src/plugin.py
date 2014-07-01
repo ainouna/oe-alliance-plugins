@@ -1,6 +1,8 @@
 # for localized messages
 from . import _
 
+from boxbranding import getImageDistro
+
 from Plugins.Plugin import PluginDescriptor
 
 from Screens.Screen import Screen
@@ -2225,7 +2227,7 @@ class OperaBrowser(Screen):
 		self.keyUp()
 
 config.plugins.youtubetv = ConfigSubsection()
-config.plugins.youtubetv.showhelp = ConfigYesNo(default = False)
+config.plugins.youtubetv.showhelp = ConfigYesNo(default = True)
 config.plugins.youtubetv.uri = ConfigText(default = "http://www.youtube.com/tv", visible_width = 50, fixed_size = False)
 class YoutubeTVWindow(Screen, HelpableScreen):
         skin =	"""
@@ -2459,8 +2461,12 @@ def youtube_setting_main(session, **kwargs):
 	session.open(YoutubeTVSettings)
 
 def start_menu_main(menuid, **kwargs):
-	if menuid == "mainmenu":
-		return [(_("YouTube TV"), showYoutubeTV, "youtube_tv", 46)]
+	if getImageDistro() in ("easygui", "beyonwiz"):
+		menu = "id_mainmenu_movies"
+	else:
+		menu = "mainmenu"
+	if menuid == menu:
+		return [(_("YouTube TV"), showYoutubeTV, "youtube_tv", 100)]
 	return []
 
 def plugin_start_main(session, **kwargs):
@@ -2491,6 +2497,7 @@ def Plugins(path, **kwargs):
 	l = []
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, needsRestart=True, fnc=auto_start_main))
 	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=showYoutubeTV, needsRestart=True))
+	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main, needsRestart=True))
 	l.append(PluginDescriptor(name=_("YouTube TV Settings"), where=PluginDescriptor.WHERE_PLUGINMENU, fnc=youtube_setting_main))
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
 	l.append(PluginDescriptor(name=_("HbbTV Applications"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, needsRestart=True, fnc=plugin_extension_start_application))
