@@ -2461,7 +2461,7 @@ def youtube_setting_main(session, **kwargs):
 	session.open(YoutubeTVSettings)
 
 def start_menu_main(menuid, **kwargs):
-	if getImageDistro() in ("easygui", "beyonwiz"):
+	if getImageDistro() in ("easy-gui", "beyonwiz"):
 		menu = "id_mainmenu_movies"
 	else:
 		menu = "mainmenu"
