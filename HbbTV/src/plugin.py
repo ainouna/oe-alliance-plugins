@@ -2497,7 +2497,8 @@ def Plugins(path, **kwargs):
 	l = []
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, needsRestart=True, fnc=auto_start_main))
 	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=showYoutubeTV, needsRestart=True))
-	l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main, needsRestart=True))
+	if not config.misc.firstrun.getValue():
+		l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main, needsRestart=True))
 	l.append(PluginDescriptor(name=_("YouTube TV Settings"), where=PluginDescriptor.WHERE_PLUGINMENU, fnc=youtube_setting_main))
 	if not config.misc.firstrun.getValue():
 		l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
