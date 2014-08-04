@@ -163,11 +163,6 @@ HbbTV/src/Makefile
 HbbTV/meta/Makefile
 HbbTV/po/Makefile
 
-INITransCodingSetup/Makefile
-INITransCodingSetup/src/Makefile
-INITransCodingSetup/meta/Makefile
-INITransCodingSetup/po/Makefile
-
 INIVFDControl/Makefile
 INIVFDControl/src/Makefile
 INIVFDControl/meta/Makefile
@@ -211,6 +206,11 @@ MICOMUpgrade/src/bin/Makefile
 MICOMUpgrade/meta/Makefile
 MICOMUpgrade/po/Makefile
 MICOMUpgrade/buttons/Makefile
+
+MultiTransCodingSetup/Makefile
+MultiTransCodingSetup/src/Makefile
+MultiTransCodingSetup/meta/Makefile
+MultiTransCodingSetup/po/Makefile
 
 OnDemand/Makefile
 OnDemand/src/Makefile
