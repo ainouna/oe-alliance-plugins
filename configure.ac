@@ -163,6 +163,11 @@ HbbTV/src/Makefile
 HbbTV/meta/Makefile
 HbbTV/po/Makefile
 
+INITransCodingSetup/Makefile
+INITransCodingSetup/src/Makefile
+INITransCodingSetup/meta/Makefile
+INITransCodingSetup/po/Makefile
+
 INIVFDControl/Makefile
 INIVFDControl/src/Makefile
 INIVFDControl/meta/Makefile

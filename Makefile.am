@@ -55,7 +55,7 @@ SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade HbbTV
 endif
 
 if INIHDP
-SUBDIRS += TransCodingSetup
+SUBDIRS += INITransCodingSetup
 endif
 
 if FORMULER3
