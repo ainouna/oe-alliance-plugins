@@ -130,6 +130,10 @@ Blindscan/src/Makefile
 Blindscan/meta/Makefile
 Blindscan/po/Makefile
 
+BTDevicesManager/Makefile
+BTDevicesManager/src/Makefile
+BTDevicesManager/meta/Makefile
+
 DLNABrowser/Makefile
 DLNABrowser/src/Makefile
 DLNABrowser/icons/Makefile
