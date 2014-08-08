@@ -4,6 +4,16 @@
 # Coding by a4tech - darezik@gmail.com (oe-alliance)
 #
 # requierments: bluez4-testtools bluez4 bluez-hcidump
+# Some Kernel modules for support HID devices
+# 
+# For example: 
+# kernel-module-hid-a4tech 
+# kernel-module-hid-apple 
+# kernel-module-hid-appleir 
+# kernel-module-hid-belkin 
+# kernel-module-hid-magicmouse 
+# kernel-module-hid-microsoft 
+# kernel-module-hid-wacom 
 #====================================================
 
 from Plugins.Plugin import PluginDescriptor
@@ -96,7 +106,7 @@ class BluetoothDevicesManager(Screen):
 			<widget name="key_yellow" position="305,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#a08500" foregroundColor="#ffffff" transparent="1" />
 			<widget name="key_blue" position="455,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#18188b" foregroundColor="#ffffff" transparent="1" />
 
-			<widget name="devicelist" position="0,50" size="600,300" backgroundColor="#000000" zPosition="10" scrollbarMode="showOnDemand" />
+			<widget name="devicelist" position="0,50" size="600,300" foregroundColor="#ffffff" zPosition="10" scrollbarMode="showOnDemand" transparent="1"/>
 			<widget name="ConnStatus" position="0,330" size="600,150" zPosition="1" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" foregroundColor="#ffffff" transparent="1" />
 	        </screen>
 		"""

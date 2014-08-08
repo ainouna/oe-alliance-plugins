@@ -2466,7 +2466,7 @@ def start_menu_main(menuid, **kwargs):
 	else:
 		menu = "mainmenu"
 	if menuid == menu:
-		return [(_("YouTube TV"), showYoutubeTV, "youtube_tv", 100)]
+		return [(_("YouTube TV"), showYoutubeTV, "youtube_tv", 1)]
 	return []
 
 def plugin_start_main(session, **kwargs):
