@@ -3,7 +3,7 @@
                     <tag type="System" />
 	  </prerequisites>
           <info>
-                    <author>INI</author>
+                    <author>a4tech</author>
                     <name>TranscodingSetup</name>
                     <packagename>enigma2-plugin-systemplugins-transcodingsetup</packagename>
                     <shortdescription>Setup transcoding of your INI HDp</shortdescription>

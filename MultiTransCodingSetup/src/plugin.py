@@ -8,13 +8,10 @@ from Components.ActionMap import ActionMap
 from Screens.MessageBox import MessageBox
 from Components.Label import Label
 from Components.Button import Button
-from Components.Sources.Boolean import Boolean
 from Components.Sources.StaticText import StaticText
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 from enigma import eTimer
-from boxbranding import getBoxType
-from os import system as os_system, path as os_path, listdir as os_listdir
 
 
 config.plugins.transcodingsetup = ConfigSubsection()
@@ -29,7 +26,7 @@ config.plugins.transcodingsetup.resolution = choice
 choice = ConfigSelection(default = "50000", choices = [("23976", "23.976 fps"), ("24000", "24 fps"), ("25000", "25 fps"), ("29970", "29.970 fps"), ("30000", "30 fps"), ("50000", "50 fps"), ("59940", "59.940 fps"), ("60000", "60 fps")])
 config.plugins.transcodingsetup.framerate = choice
 
-config.plugins.transcodingsetup.aspectratio = ConfigSelection(default = "2", choices = [("1", _("4x3")), ("2", _("16x9")) ])
+config.plugins.transcodingsetup.aspectratio = ConfigSelection(default = "16:9", choices = [("4:3", _("4x3")), ("16:9", _("16x9")) ])
 
 config.plugins.transcodingsetup.interlaced = ConfigSelection(default = "0", choices = [ ("1", _("Yes")), ("0", _("No"))])
 
