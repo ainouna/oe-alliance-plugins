@@ -1,4 +1,4 @@
-installdir = $(libdir)/enigma2/python/Plugins/SystemPlugins/TransCodingSetup
+installdir = $(libdir)/enigma2/python/Plugins/SystemPlugins/MultiTransCodingSetup
 
 install_PYTHON = \
 	__init__.py \
