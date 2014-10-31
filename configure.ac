@@ -82,7 +82,7 @@ AM_CONDITIONAL(ET6X00, test "$BOXTYPE" == "et6x00")
 AM_CONDITIONAL(ET9X00, test "$BOXTYPE" == "et9x00")
 AM_CONDITIONAL(ET8000, test "$BOXTYPE" == "et8000")
 AM_CONDITIONAL(ET10000, test "$BOXTYPE" == "et10000")
-AM_CONDITIONAL(KMT3000, test `echo "$BOXTYPE"` == "kmt3000")
+AM_CONDITIONAL(VG5000, test `echo "$BOXTYPE"` == "vg5000")
 AM_CONDITIONAL(EW7358, test `echo "$BOXTYPE"` == "ew7358")
 AM_CONDITIONAL(FORMULER1, test "$BOXTYPE" == formuler1)
 AM_CONDITIONAL(FORMULER3, test "$BOXTYPE" == formuler3)
@@ -115,6 +115,7 @@ AM_CONDITIONAL(VUDUO, test "$BOXTYPE" == vuduo)
 AM_CONDITIONAL(VUSOLO2, test "$BOXTYPE" == vusolo2)
 AM_CONDITIONAL(VUDUO2, test "$BOXTYPE" == vuduo2)
 AM_CONDITIONAL(XP1000, test "$BOXTYPE" == xp1000)
+AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(SPARK, test `echo "$BOXTYPE" | cut -b 1-5` == spark)
 if test `echo "$BOXTYPE" | cut -b 1-2` == "dm"; then
 	AC_DEFINE(DREAMBOX, 1, [Dreambox hardware])
@@ -139,6 +140,7 @@ AutoBouquetsMaker/po/Makefile
 AutoBouquetsMaker/providers/Makefile
 AutoBouquetsMaker/src/Makefile
 AutoBouquetsMaker/src/scanner/Makefile
+AutoBouquetsMaker/custom/Makefile
 
 AudioEffect/Makefile
 AudioEffect/src/Makefile
