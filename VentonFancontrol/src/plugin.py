@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from boxbranding import getImageDistro
 from Screens.Screen import Screen
 from Components.ConfigList import ConfigListScreen
 from Components.config import config, ConfigSubsection, ConfigInteger, ConfigSelection, getConfigListEntry
@@ -101,10 +102,16 @@ def FanMain(session, **kwargs):
 	session.open(FanSetupScreen)
 
 def FanSetup(menuid, **kwargs):
-	if menuid == "system":
-		return [(_("FAN Control"), FanMain, "fan_control", None)]
+	if getImageDistro() in ("miracleboxhd", "miraclebox"):
+		if menuid == "expert":
+			return [(_("FAN Control"), FanMain, "fan_control", None)]
+		else:
+			return []  
 	else:
-		return []
+		if menuid == "system":
+			return [(_("FAN Control"), FanMain, "fan_control", None)]
+		else:
+			return []
 		
 def Plugins(**kwargs):
 	from os import path

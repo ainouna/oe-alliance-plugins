@@ -16,6 +16,8 @@
 # kernel-module-hid-wacom 
 #====================================================
 
+from boxbranding import getImageDistro
+
 from Plugins.Plugin import PluginDescriptor
 from enigma import eTimer, eConsoleAppContainer
 
@@ -263,9 +265,20 @@ class BluetoothDevicesManager(Screen):
 
 	def setListOnView(self):
 		return self.devicelist
-	      
+
+def start_menu_main(menuid, **kwargs):
+	if menuid == "system":
+		return [(_("Bluetooth Devices Manager"), BluetoothDevicesManager, "bt_control", None)]
+	else:
+		return []
+		      
 def main(session, **kwargs):
 	session.open(BluetoothDevicesManager)
 
 def Plugins(**kwargs):
-	return [PluginDescriptor(name=_("Bluetooth Devices Manager"), description="This is bt devices manager", where = PluginDescriptor.WHERE_PLUGINMENU, fnc=main)]
+	l = []
+	if getImageDistro() in ("miracleboxhd", "miraclebox"):
+		l.append(PluginDescriptor(name=_("Bluetooth Devices Manager"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main))
+	else:
+		l.append(PluginDescriptor(name=_("Bluetooth Devices Manager"), description="This is bt devices manager", where = PluginDescriptor.WHERE_PLUGINMENU, fnc=main))
+	return l  
