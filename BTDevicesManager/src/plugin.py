@@ -268,7 +268,7 @@ class BluetoothDevicesManager(Screen):
 
 def start_menu_main(menuid, **kwargs):
 	if menuid == "system":
-		return [(_("Bluetooth Devices Manager"), BluetoothDevicesManager, "bt_control", None)]
+		return [(_("Bluetooth Devices Manager"), main, "bt_control", None)]
 	else:
 		return []
 		      

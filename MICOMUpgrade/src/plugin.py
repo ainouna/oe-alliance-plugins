@@ -1,6 +1,8 @@
 # for localized messages
 from . import _
 
+from boxbranding import getImageDistro
+
 import os, urllib
 from urllib import urlretrieve
 
@@ -524,10 +526,19 @@ class FirmwareUpgrade(Screen):
 	def keyNone(self):
 		None
 
-      
+def start_menu_main(menuid, **kwargs):
+	if menuid == "system":
+		return [(_("Front Panel Update"), main, "ft_control", None)]
+	else:
+		return []
+	      
 def main(session, **kwargs):
         session.open(FirmwareUpgrade)
 
 def Plugins(**kwargs):
-	return PluginDescriptor(name=_("Front Panel Update"), description="Upgrade Front panel..", where = PluginDescriptor.WHERE_PLUGINMENU, fnc=main)
-
+	l = []
+	if getImageDistro() in ("miracleboxhd", "miraclebox"):
+		l.append(PluginDescriptor(name=_("Front Panel Update"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main))
+	else:
+		l.append(PluginDescriptor(name=_("Front Panel Update"), description="Upgrade Front panel..", where = PluginDescriptor.WHERE_PLUGINMENU, fnc=main))
+	return l
