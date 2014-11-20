@@ -307,5 +307,3 @@ class BookmarkManager(SimpleConfigParser):
 	@staticmethod
 	def getInstance():
 		return BookmarkManager('/etc/enigma2/hbbtv_bookmark.ini')
-
-

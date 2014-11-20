@@ -243,6 +243,8 @@ class DvbScanner():
 				key = "%x:%x:%x" % (transponder["transport_stream_id"], transponder["original_network_id"], transponder["service_id"])
 				hd_logical_channel_number_dict_tmp[key] = transponder
 				continue
+			if len(transponder) == 8: # DVB-T2 part, not ready yet.
+				continue
 			transponder["services"] = {}
 			transponder["dvb_type"] = self.dvbtype
 			transponder["bouquet_type"] = bouquettype
@@ -381,7 +383,7 @@ class DvbScanner():
 
 		dvbreader.close(fd)
 
-		# When no LCN available, create fake LCN numbers and use customlcn file for final channel numbers
+		# When no LCN available, create fake LCN numbers (service-id) and use customlcn file for final channel numbers
 		if len(logical_channel_number_dict) == 0 and protocol == "nolcn":
 			lcn_temp = {}
 			for key in sdt_secions_status:
@@ -389,13 +391,10 @@ class DvbScanner():
 					service = section_content
 					key = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
 					lcn_temp[key] = service
-			lcn_temp_sorted = sorted(lcn_temp)
-			i = 1
-			for key in lcn_temp_sorted:
+			for key in lcn_temp:
 				if lcn_temp[key]["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES or lcn_temp[key]["service_type"] in DvbScanner.AUDIO_ALLOWED_TYPES or lcn_temp[key]["service_type"] in DvbScanner.INTERACTIVE_ALLOWED_TYPES:
-					lcn_temp[key]["logical_channel_number"] = i
+					lcn_temp[key]["logical_channel_number"] = lcn_temp[key]["service_id"]
 					lcn_temp[key]["visible_service_flag"] = 1
-					i += 1
 				else:
 					lcn_temp[key]["visible_service_flag"] = 0
 			logical_channel_number_dict = lcn_temp

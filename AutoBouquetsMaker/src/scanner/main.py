@@ -39,7 +39,8 @@ class AutoBouquetsMaker(Screen):
 		<widget name="progress" position="65,55" size="520,5" borderWidth="1" backgroundColor="#11000000"/>
 	</screen>"""
 
-	LOCK_TIMEOUT = 300 	# 100ms for tick - 30 sec
+	LOCK_TIMEOUT_FIXED = 100 	# 100ms for tick - 10 sec
+	LOCK_TIMEOUT_ROTOR = 1200 	# 100ms for tick - 120 sec
 
 	def __init__(self, session, args = 0):
 		self.session = session
@@ -212,12 +213,12 @@ class AutoBouquetsMaker(Screen):
 				print>>log, "[AutoBouquetsMaker] No area found"
 				self.showError(_('No area found'))
 				return
-			
+
 			transponder = self.providers[self.currentAction]["bouquets"][bouquet_key]
 
 		nimList = []
 		for nim in nimmanager.nim_slots:
-			if (self.providers[self.currentAction]["streamtype"] == "dvbs" and nim.isCompatible("DVB-S") and nim.config_mode not in ("loopthrough")) or (self.providers[self.currentAction]["streamtype"] == "dvbc" and nim.isCompatible("DVB-C")) or (self.providers[self.currentAction]["streamtype"] == "dvbt" and nim.isCompatible("DVB-T")):
+			if (nim.config_mode not in ("loopthrough", "satposdepends", "nothing")) and ((self.providers[self.currentAction]["streamtype"] == "dvbs" and nim.isCompatible("DVB-S")) or (self.providers[self.currentAction]["streamtype"] == "dvbc" and nim.isCompatible("DVB-C")) or (self.providers[self.currentAction]["streamtype"] == "dvbt" and nim.isCompatible("DVB-T"))):
 				nimList.append(nim.slot)
 		if len(nimList) == 0:
 			print>>log, "[AutoBouquetsMaker] No NIMs found"
@@ -234,6 +235,29 @@ class AutoBouquetsMaker(Screen):
 			print>>log, "[AutoBouquetsMaker] Search NIM for orbital position %d" % transponder["orbital_position"]
 		else:
 			print>>log, "[AutoBouquetsMaker] Search NIM"
+
+		# stop pip if running
+		if self.session.pipshown:
+			self.session.pipshown = False
+			del self.session.pip
+			print>>log, "[AutoBouquetsMaker] Stopping PIP."
+
+		# stop currently playing service if it is using a tuner in ("loopthrough", "satposdepends")
+		currentlyPlayingNIM = None
+		currentService = self.session and self.session.nav.getCurrentService()
+		frontendInfo = currentService and currentService.frontendInfo()
+		frontendData = frontendInfo and frontendInfo.getAll(True)
+		if frontendData is not None:
+			currentlyPlayingNIM = frontendData.get("tuner_number", None)
+			if self.providers[self.currentAction]["streamtype"] == "dvbs" and currentlyPlayingNIM is not None:
+				nimConfigMode = nimmanager.nim_slots[currentlyPlayingNIM].config_mode
+				if nimConfigMode in ("loopthrough", "satposdepends"):
+					self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
+					self.session.nav.stopService()
+					currentlyPlayingNIM = None
+					print>>log, "[AutoBouquetsMaker] The active service was using a %s tuner, so had to be stopped (slot id %s)." % (nimConfigMode, currentlyPlayingNIM)
+		del frontendInfo
+		del currentService
 
 		current_slotid = -1
 		if self.rawchannel:
@@ -275,22 +299,41 @@ class AutoBouquetsMaker(Screen):
 			return
 
 		if not self.rawchannel:
-			print>>log, "[AutoBouquetsMaker] Nim found on slot id %d but it's busy. Stop current service" % current_slotid
-			if self.session.nav.RecordTimer.isRecording():
-				print>>log, "[AutoBouquetsMaker] Cannot free NIM because a record is in progress"
-				self.showError(_('Cannot free NIM because a record is in progress'))
-				return
+			# if we are here the only possible option is to close the active service
+			if currentlyPlayingNIM in nimList:
+				if self.providers[self.currentAction]["streamtype"] == "dvbs":
+					sats = nimmanager.getSatListForNim(currentlyPlayingNIM)
+					slotid = currentlyPlayingNIM
+					for sat in sats:
+						if sat[0] == transponder["orbital_position"]:
+							print>>log, "[AutoBouquetsMaker] Nim found on slot id %d but it's busy. Stopping active service" % currentlyPlayingNIM
+							self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
+							self.session.nav.stopService()
+							self.rawchannel = resmanager.allocateRawChannel(slotid)
+							break
+				else:
+					print>>log, "[AutoBouquetsMaker] Nim found on slot id %d but it's busy. Stopping active service" % currentlyPlayingNIM
+					self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
+					self.session.nav.stopService()
+					self.rawchannel = resmanager.allocateRawChannel(slotid)
 
-			self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
-			self.session.nav.stopService()
-			if self.session.pipshown:
-				self.session.pipshown = False
-
-			self.rawchannel = resmanager.allocateRawChannel(current_slotid)
 			if not self.rawchannel:
-				print>>log, "[AutoBouquetsMaker] Cannot get the NIM"
-				self.showError(_('Cannot get the NIM'))
-				return
+				if self.session.nav.RecordTimer.isRecording():
+					print>>log, "[AutoBouquetsMaker] Cannot free NIM because a record is in progress"
+					self.showError(_('Cannot free NIM because a recording is in progress'))
+					return
+				else:
+					print>>log, "[AutoBouquetsMaker] Cannot get the NIM"
+					self.showError(_('Cannot get the NIM'))
+					return
+
+		# set extended timeout for rotors
+		if self.providers[self.currentAction]["streamtype"] == "dvbs" and self.isRotorSat(slotid, transponder["orbital_position"]):
+			self.LOCK_TIMEOUT = self.LOCK_TIMEOUT_ROTOR
+			print>>log, "[AutoBouquetsMaker] Motorised dish. Will wait up to %i seconds for tuner lock." % (self.LOCK_TIMEOUT/10)
+		else:
+			self.LOCK_TIMEOUT = self.LOCK_TIMEOUT_FIXED
+			print>>log, "[AutoBouquetsMaker] Fixed dish. Will wait up to %i seconds for tuner lock." % (self.LOCK_TIMEOUT/10)
 
 		self.frontend = self.rawchannel.getFrontend()
 		if not self.frontend:
@@ -416,6 +459,14 @@ class AutoBouquetsMaker(Screen):
 		self.timer = eTimer()
 		self.timer.callback.append(self.close)
 		self.timer.start(2000, 1)
+
+	def isRotorSat(self, slot, orb_pos):
+		rotorSatsForNim = nimmanager.getRotorSatListForNim(slot)
+		if len(rotorSatsForNim) > 0:
+			for sat in rotorSatsForNim:
+				if sat[0] == orb_pos:
+					return True
+		return False
 
 	def about(self):
 		self.session.open(MessageBox,"AutoBouquetsMaker\nVersion date - 21/10/2012\n\nCoded by:\n\nSkaman and AndyBlac",MessageBox.TYPE_INFO)
