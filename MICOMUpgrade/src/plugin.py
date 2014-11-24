@@ -537,7 +537,7 @@ def main(session, **kwargs):
 
 def Plugins(**kwargs):
 	l = []
-	if getImageDistro() in ("miracleboxhd", "miraclebox"):
+	if getImageDistro() in ("miracleboxhd", "miraclebox", "miraculous"):
 		l.append(PluginDescriptor(name=_("Front Panel Update"), where=PluginDescriptor.WHERE_MENU, fnc=start_menu_main))
 	else:
 		l.append(PluginDescriptor(name=_("Front Panel Update"), description="Upgrade Front panel..", where = PluginDescriptor.WHERE_PLUGINMENU, fnc=main))
