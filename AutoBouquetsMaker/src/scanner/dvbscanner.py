@@ -239,6 +239,10 @@ class DvbScanner():
 			if len(transponder) == 5: # lcn
 				key = "%x:%x:%x" % (transponder["transport_stream_id"], transponder["original_network_id"], transponder["service_id"])
 				logical_channel_number_dict_tmp[key] = transponder
+				try:
+					logical_channel_number_dict_tmp[key]["transponder"] = lastTransponder
+				except:
+					continue
 				continue
 			if len(transponder) == 6: # HD lcn
 				key = "%x:%x:%x" % (transponder["transport_stream_id"], transponder["original_network_id"], transponder["service_id"])
@@ -306,6 +310,8 @@ class DvbScanner():
 					transponder["modulation_type"] = 1
 				transponder["inversion"] = 2
 				transponder["namespace"] = self.buildNamespace(transponder)
+				
+				lastTransponder = transponder
 
 			key = "%x:%x:%x" % (transponder["namespace"],
 				transponder["transport_stream_id"],
@@ -537,6 +543,18 @@ class DvbScanner():
 						break
 
 		dvbreader.close(fd)
+		
+		# to ignore services on not configured satellites
+		from Components.config import config
+		if config.autobouquetsmaker.skipservices.value:
+			from Components.NimManager import nimmanager
+			nims = nimmanager.getNimListOfType("DVB-S")
+			orbitals_configured = []
+			for nim in nims:
+				sats = nimmanager.getSatListForNim(nim)
+				for sat in sats:
+					if sat[0] not in orbitals_configured:
+						orbitals_configured.append(sat[0])
 
 		service_count = 0
 		tmp_services_dict = {}
@@ -551,10 +569,21 @@ class DvbScanner():
 			if logical_channel_number_dict[key]["visible_service_flag"] == 0:
 				continue
 
-			service["free_ca"] = 1
-			service["namespace"] = namespace
-			service["flags"] = 0
+			if not hasattr(service, "free_ca"):
+				service["free_ca"] = 1
+			
+			if not hasattr(service, "namespace"):
+				try:
+					service["namespace"] = service["namespace"] = logical_channel_number_dict[key]["transponder"]["namespace"]
+				except:
+					service["namespace"] = namespace
+					
+			if not hasattr(service, "flags"):
+				service["flags"] = 0
+				
 			service["number"] = logical_channel_number_dict[key]["logical_channel_number"]
+			
+			service["orbital_position"] = service["namespace"] / (16**4)
 
 			if key in tmp_services_dict:
 				tmp_services_dict[key]["numbers"].append(service["number"])
@@ -570,10 +599,14 @@ class DvbScanner():
 		radio_services = {}
 
 		service_extra_count = 0
-
+		services_without_transponders = 0
+		
 		for key in tmp_services_dict:
 			service = tmp_services_dict[key]
-
+			
+			if config.autobouquetsmaker.skipservices.value and service["orbital_position"] not in orbitals_configured:
+				continue
+			
 			if len(servicehacks) > 0:
 				skip = False
 				exec(servicehacks)
@@ -583,6 +616,7 @@ class DvbScanner():
 
 			tpkey = "%x:%x:%x" % (service["namespace"], service["transport_stream_id"], service["original_network_id"])
 			if tpkey not in transponders:
+				services_without_transponders += 1
 				continue
 
 
@@ -599,6 +633,8 @@ class DvbScanner():
 						radio_services[number] = service
 
 		print>>log, "[DvbScanner] %d valid services" % service_extra_count
+		if services_without_transponders:
+			print>>log, "[DvbScanner] %d services omitted as there is no corresponding transponder" % services_without_transponders
 		return {
 			"video": video_services,
 			"radio": radio_services

@@ -212,18 +212,29 @@ class AutoBouquetsMaker_ProvidersSetup(ConfigListScreen, Screen):
 		self.createSetup()
 		self["pleasewait"].hide()
 		self["actions"].setEnabled(True)
+		
+	def providerKeysInNameOrder(self, providers):
+		temp = []
+		for provider in providers.keys():
+			temp.append((provider, providers[provider]["name"]))
+		return [i[0] for i in sorted(temp, key=lambda p: p[1].lower().decode('ascii','ignore'))]
 
 	def createSetup(self):
 		self.editListEntry = None
 		self.list = []
 		providers_enabled = []
-		for provider in sorted(self.providers.keys()):
+		providers_already_loaded = []
+		for provider in self.providerKeysInNameOrder(self.providers):
 			if self.providers[provider]["streamtype"] == 'dvbs' and self.providers[provider]["transponder"]["orbital_position"] not in self.orbital_supported:
 				continue
 			if self.providers[provider]["streamtype"] == 'dvbc' and len(self.dvbc_nims) <= 0:
 				continue
 			if self.providers[provider]["streamtype"] == 'dvbt' and len(self.dvbt_nims) <= 0:
 				continue
+			if self.providers[provider]["name"] in providers_already_loaded:
+				continue
+			else:
+				providers_already_loaded.append(self.providers[provider]["name"])
 
 			self.list.append(getConfigListEntry(self.providers[provider]["name"], self.providers_configs[provider], _("This option enables the current selected provider.")))
 			if self.providers_configs[provider].value:
@@ -441,9 +452,10 @@ class AutoBouquetsMaker_Setup(ConfigListScreen, Screen):
 			self.list.append(getConfigListEntry(_("Time of scan to start"), config.autobouquetsmaker.scheduletime, _("Set the time of day to perform the scan.")))
 			self.list.append(getConfigListEntry(_("Repeat how often"), config.autobouquetsmaker.repeattype, _("Set the repeat interval of the schedule.")))
 		if config.autobouquetsmaker.level.value == "expert":
-			self.list.append(getConfigListEntry(_("Keep all bouquets"), config.autobouquetsmaker.keepallbouquets, _("When disabled this will enable the 'Keep bouquets' in the main menu, allowing you to hide some 'existing' bouquets.")))
+			self.list.append(getConfigListEntry(_("Keep all non-ABM bouquets"), config.autobouquetsmaker.keepallbouquets, _("When disabled this will enable the 'Keep bouquets' option in the main menu, allowing you to hide some 'existing' bouquets.")))
 			self.list.append(getConfigListEntry(_("Add provider prefix to bouquets"), config.autobouquetsmaker.addprefix, _("This option will prepend the provider name to bouquet name.")))
 			self.list.append(getConfigListEntry(_("Place bouquets at"), config.autobouquetsmaker.placement, _("This option will alow you choose where to place the created bouquets.")))
+			self.list.append(getConfigListEntry(_("Skip services on not configured sats"), config.autobouquetsmaker.skipservices, _("If a service is carried on a satellite that is not configured, 'yes' means the channel will not appear in the channel list, 'no' means the channel will show in the channel list but be greyed out and not be accessible.")))
 		self.list.append(getConfigListEntry(_("Show in extensions"), config.autobouquetsmaker.extensions, _("When enable allow you start a scan from the extensions list.")))
 
 		self["config"].list = self.list
