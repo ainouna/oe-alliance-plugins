@@ -124,8 +124,8 @@ class BouquetsWriter():
 
 		print>>log, "[BouquetsWriter] Wrote %d transponders and %d services" % (transponders_count, services_count)
 
-	def transformCustomInMain(self, path, filename, max_count):
-		print>>log, "[BouquetsWriter] Transform bouquet %s in main bouquet..." % filename
+	def makeCustomSeparator(self, path, filename, max_count):
+		print>>log, "[BouquetsWriter] Make custom seperator for %s in main bouquet..." % filename
 
 		try:
 			bouquet_in = open(path + "/" + filename, "r")
@@ -135,25 +135,37 @@ class BouquetsWriter():
 
 		content = bouquet_in.read()
 		bouquet_in.close()
-
+		
+		seperator_name = "/%s%s.separator.tv" % (self.ABM_BOUQUET_PREFIX, filename[:len(filename)-3])
 		try:
-			bouquet_out = open(path + "/" + filename, "w")
+			bouquet_out = open(path + seperator_name, "w")
 		except Exception, e:
 			print>>log, "[BouquetsWriter]", e
 			return
-
+			
 		rows = content.split("\n")
 		count = 0
+		
+		name = ''
 		for row in rows:
 			if len(row.strip()) == 0:
 				break
+				
+			if row[:5] == "#NAME" and name == '':
+				name = row.strip()[6:]
 
 			if row[:8] == "#SERVICE" and row[:13] != "#SERVICE 1:64":
 				count += 1
 				if count > max_count:
 					break
 
-			bouquet_out.write(row + "\n")
+			#bouquet_out.write(row + "\n")
+		
+		print>>log, "[BouquetsWriter] Custom seperator name: %s" % name
+
+		bouquet_out.write("#NAME CustomSeparatorMain for %s\n" % name)
+		bouquet_out.write("#SERVICE 1:64:0:0:0:0:0:0:0:0:\n")
+		bouquet_out.write("#DESCRIPTION CustomSeparatorMain for %s\n" % name)
 
 		if count < max_count:
 			for i in range(count, max_count):
@@ -161,8 +173,8 @@ class BouquetsWriter():
 				bouquet_out.write("#DESCRIPTION  \n")
 
 		bouquet_out.close()
-
-		print>>log, "[BouquetsWriter] Done"
+		
+		print>>log, "[BouquetsWriter] Custom seperator made. %s" % seperator_name
 
 	def containServices(self, path, filename):
 		try:
@@ -200,13 +212,22 @@ class BouquetsWriter():
 		bouquetsToKeep2["radio"] = []
 
 		customfilenames = []
-
+		hidden_non_abm_bouquet = []
+		
 		if config.autobouquetsmaker.placement.getValue() == 'bottom':
-			for filename in bouquetsToKeep["tv"]:
-				bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename)
-
-			for filename in bouquetsToKeep["radio"]:
-				bouquets_radio.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename)
+			for bouquet_type in ["tv", "radio"]:
+				for filename in currentBouquets[bouquet_type]:
+					if filename[:len(self.ABM_BOUQUET_PREFIX)] == self.ABM_BOUQUET_PREFIX:
+						continue
+					if filename in bouquetsToKeep[bouquet_type]:
+						to_write = "#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename
+					else:
+						to_write = "#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename
+						hidden_non_abm_bouquet.append(filename)
+					if bouquet_type == "tv":
+						bouquets_tv.write(to_write)
+					else:
+						bouquets_radio.write(to_write)
 
 		for section_identifier in bouquetsOrder:
 			sections = providers[section_identifier]["sections"]
@@ -219,16 +240,16 @@ class BouquetsWriter():
 				bouquetsToKeep2["tv"].append("%s%s.main.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier))
 			elif provider_configs[section_identifier].isMakeCustomMain() and config.autobouquetsmaker.placement.getValue() == 'top':
 				customfilename = provider_configs[section_identifier].getCustomFilename()
-				if self.containServices(path, customfilename):
-					bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % customfilename)
-				else:
-					bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % customfilename)
+				bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % customfilename)
+				customseperator = "%s%s.separator.tv" % (self.ABM_BOUQUET_PREFIX, customfilename[:len(customfilename)-3])
+				bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % customseperator)
 				bouquetsToKeep2["tv"].append(customfilename)
+				bouquetsToKeep2["tv"].append(customseperator)
 				customfilenames.append(customfilename)
 
 			if provider_configs[section_identifier].isMakeSections():
 				for section_number in sorted(sections.keys()):
-					if section_identifier in bouquets_to_hide and section_number in bouquets_to_hide[section_identifier]:
+					if (section_identifier in bouquets_to_hide and section_number in bouquets_to_hide[section_identifier]) or not self.containServicesLines(path, "%s%s.%d.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_number)):
 						bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%d.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_number))
 					else:
 						bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%d.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_number))
@@ -238,25 +259,25 @@ class BouquetsWriter():
 				section_type = "hd"
 				if self.containServicesLines(path, "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type)):
 					bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-					bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-				if not "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type) in currentBouquets["tv"]:
-					currentBouquets["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				else:
+					bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
 				
 			if provider_configs[section_identifier].isMakeFTAHD():
 				section_type = "ftahd"
 				if self.containServicesLines(path, "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type)):
 					bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-					bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-				if not "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type) in currentBouquets["tv"]:
-					currentBouquets["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				else:
+					bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
 				
 			if provider_configs[section_identifier].isMakeFTA():
 				section_type = "fta"
 				if self.containServicesLines(path, "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type)):
 					bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-					bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
-				if not "%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type) in currentBouquets["tv"]:
-					currentBouquets["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				else:
+					bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.%s.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
+				bouquetsToKeep2["tv"].append("%s%s.%s.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier, section_type))
 			
 			bouquets_tv.write("#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s%s.separator.tv\" ORDER BY bouquet\n" % (self.ABM_BOUQUET_PREFIX, section_identifier))
 			bouquetsToKeep2["tv"].append("%s%s.separator.tv" % (self.ABM_BOUQUET_PREFIX, section_identifier))
@@ -265,20 +286,26 @@ class BouquetsWriter():
 			bouquetsToKeep2["radio"].append("%s%s.main.radio" % (self.ABM_BOUQUET_PREFIX, section_identifier))
 
 		if config.autobouquetsmaker.placement.getValue() == 'top':
-			for filename in bouquetsToKeep["tv"]:
-				if filename in customfilenames:
-					continue
-				bouquets_tv.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename)
-
-			for filename in bouquetsToKeep["radio"]:
-				bouquets_radio.write("#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename)
+			for bouquet_type in ["tv", "radio"]:
+				for filename in currentBouquets[bouquet_type]:
+					if filename[:len(self.ABM_BOUQUET_PREFIX)] == self.ABM_BOUQUET_PREFIX or filename in customfilenames:
+						continue
+					if filename in bouquetsToKeep[bouquet_type]:
+						to_write = "#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename
+					else:
+						to_write = "#SERVICE 1:519:1:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet\n" % filename
+						hidden_non_abm_bouquet.append(filename)
+					if bouquet_type == "tv":
+						bouquets_tv.write(to_write)
+					else:
+						bouquets_radio.write(to_write)
 
 		bouquets_tv.close()
 		bouquets_radio.close()
 
 		for bouquet_type in ["tv", "radio"]:
 			for filename in currentBouquets[bouquet_type]:
-				if filename in bouquetsToKeep[bouquet_type] or filename in bouquetsToKeep2[bouquet_type]:
+				if filename in bouquetsToKeep[bouquet_type] or filename in bouquetsToKeep2[bouquet_type] or filename in hidden_non_abm_bouquet:
 					continue
 
 				try:
@@ -431,9 +458,9 @@ class BouquetsWriter():
 			bouquet_current.close()
 			force_keep_numbers = True
 
-		elif provider_config.isMakeCustomMain():
+		elif provider_config.isMakeCustomMain() and config.autobouquetsmaker.placement.getValue() == 'top':
 			current_number = sorted(sections.keys())[0] - 1
-			self.transformCustomInMain(path, provider_config.getCustomFilename(), current_number)
+			self.makeCustomSeparator(path, provider_config.getCustomFilename(), current_number)
 			force_keep_numbers = True
 		else:
 			force_keep_numbers = True

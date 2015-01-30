@@ -15,7 +15,7 @@ from Components.Sources.StaticText import StaticText
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 from enigma import eTimer
-from boxbranding import getBoxType
+from boxbranding import getBoxType, getMachineBuild
 from os import system as os_system, path as os_path, listdir as os_listdir
 
 def getProcValue(procPath):
@@ -60,7 +60,7 @@ config.plugins.transcodingsetup.encoder = ConfigSubList()
 
 def createTransCodingConfig(encoder):
 	if fileExists(getProcPath(encoder ,"bitrate")):
-		if getBoxType() in ('vusolo2'):
+		if getBoxType() in ('vusolo2') or getMachineBuild() in ('ew7356', 'dags3', 'dags4'):
 			choice = ConfigSelection(default = "400000", choices=[("-1", "Auto"), ("50000", "50 Kbits"), ("100000", "100 Kbits"), ("150000", "150 Kbits"), ("200000", "200 Kbits"), ("250000", "250 Kbits"), ("300000", "300 Kbits"), ("350000", "350 Kbits"), ("400000", "400 Kbits"), ("450000", "450 Kbits"), ("500000", "500 Kbits"), ("600000", "600 Kbits"), ("700000", "700 Kbits"), ("800000", "800 Kbits"), ("900000", "900 Kbits"), ("1000000", "1 Mbits")])
 		elif getBoxType() in ('gbquad', 'gbquadplus'):
 			choice = ConfigSelection(default = "-1", choices=[("-1", "Auto"), ("50000", "50 Kbits"), ("100000", "100 Kbits"), ("150000", "150 Kbits"), ("200000", "200 Kbits"), ("250000", "250 Kbits"), ("300000", "300 Kbits"), ("350000", "350 Kbits"), ("400000", "400 Kbits"), ("450000", "450 Kbits"), ("500000", "500 Kbits"), ("600000", "600 Kbits"), ("700000", "700 Kbits"), ("800000", "800 Kbits"), ("900000", "900 Kbits"), ("1000000", "1 Mbits")])
@@ -183,7 +183,7 @@ class TranscodingSetupInit:
 			if hasattr(config.plugins.transcodingsetup.encoder[int(encoder)], "automode"):
 				config.plugins.transcodingsetup.encoder[int(encoder)].automode.addNotifier(self.setAutomode, extra_args=[int(encoder)])
 
-		config.plugins.transcodingsetup.port.addNotifier(self.setPort)
+		config.plugins.transcodingsetup.port.addNotifier(self.setPort, initial_call = False)
 
 	def setConfig(self, procPath, value):
 		if not fileExists(procPath):
@@ -348,7 +348,7 @@ class TranscodingSetup(Screen,ConfigListScreen):
 		self.setup_title = _("Transcoding Setup")
 		self.setTitle(self.setup_title)
 
-		if getBoxType() in ('vusolo2', 'gbquad', 'gbquadplus'):
+		if getBoxType() in ('vusolo2', 'gbquad', 'gbquadplus') or getMachineBuild() in ('ew7356', 'dags3', 'dags4'):
 			TEXT = _("Transcoding and PIP are mutually exclusive.")
 		else:
 			TEXT = _("2nd transcoding and PIP are mutually exclusive.")
@@ -491,7 +491,6 @@ class TranscodingSetup(Screen,ConfigListScreen):
 
 	def keySave(self):
 		self.saveAll()
-		transcodingsetupinit.setPort(config.plugins.transcodingsetup.port)
 		self.close()
 
 	def KeyDefault(self):
@@ -548,7 +547,9 @@ class TranscodingSetup(Screen,ConfigListScreen):
 def main(session, **kwargs):
 	session.open(TranscodingSetup)
 
-def Plugins(**kwargs):
-	return [PluginDescriptor(name=_("TranscodingSetup"), description=_("Transcoding Setup"), where = PluginDescriptor.WHERE_PLUGINMENU, needsRestart = False, fnc=main)]
+def startSession(reason):
+	global transcodingsetupinit
+	transcodingsetupinit = TranscodingSetupInit()
 
-transcodingsetupinit = TranscodingSetupInit()
+def Plugins(**kwargs):
+	return [PluginDescriptor(name=_("TranscodingSetup"), description=_("Transcoding Setup"), where = PluginDescriptor.WHERE_PLUGINMENU, needsRestart = False, fnc=main), PluginDescriptor(where=[PluginDescriptor.WHERE_AUTOSTART], fnc=startSession)]

@@ -64,6 +64,7 @@ AM_CONDITIONAL(DAGS2, test "$BOXTYPE" == "dags2")
 AM_CONDITIONAL(DAGS3, test "$BOXTYPE" == "dags3")
 AM_CONDITIONAL(DAGS4, test "$BOXTYPE" == "dags4")
 AM_CONDITIONAL(DAGS5, test "$BOXTYPE" == "dags5")
+AM_CONDITIONAL(DAGS6, test "$BOXTYPE" == "dags6")
 AM_CONDITIONAL(DM500HD, test "$BOXTYPE" == "dm500hd")
 AM_CONDITIONAL(DM500HDV2, test "$BOXTYPE" == "dm500hdv2")
 AM_CONDITIONAL(DM800, test "$BOXTYPE" == "dm800")
@@ -87,6 +88,7 @@ AM_CONDITIONAL(VG2000, test `echo "$BOXTYPE"` == "vg2000")
 AM_CONDITIONAL(VG5000, test `echo "$BOXTYPE"` == "vg5000")
 AM_CONDITIONAL(EW7358, test `echo "$BOXTYPE"` == "ew7358")
 AM_CONDITIONAL(EW7362, test `echo "$BOXTYPE"` == "ew7362")
+AM_CONDITIONAL(EW7356, test `echo "$BOXTYPE"` == "ew7356")
 AM_CONDITIONAL(FORMULER1, test "$BOXTYPE" == formuler1)
 AM_CONDITIONAL(FORMULER3, test "$BOXTYPE" == formuler3)
 AM_CONDITIONAL(GB800SOLO, test "$BOXTYPE" == "gb800solo")
@@ -286,11 +288,6 @@ TunerServer/Makefile
 TunerServer/src/Makefile
 TunerServer/meta/Makefile
 TunerServer/po/Makefile
-
-OpenUitzendingGemist/Makefile
-OpenUitzendingGemist/src/Makefile
-OpenUitzendingGemist/meta/Makefile
-OpenUitzendingGemist/po/Makefile
 
 SF8VFDControl/Makefile
 SF8VFDControl/src/Makefile

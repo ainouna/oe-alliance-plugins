@@ -1,5 +1,5 @@
 <provider>
-	<name>Sky Italy</name>
+	<name>Sky Italia</name>
 	<streamtype>dvbs</streamtype>
 	<protocol>sky</protocol>
 	<transponder
@@ -15,8 +15,8 @@
 		pilot="2"
 	/>
 	<dvbsconfigs>
-		<configuration key="sd_sky_italy" bouquet="0x6250" region="0x05" namespace="0x820000">SKY Italy SD</configuration>
-		<configuration key="hd_sky_italy" bouquet="0x6250" region="0x04" namespace="0x820000">SKY Italy HD</configuration>
+		<configuration key="sd_sky_italy" bouquet="0x6250" region="0x05" namespace="0x820000">Sky Italia SD</configuration>
+		<configuration key="hd_sky_italy" bouquet="0x6250" region="0x04" namespace="0x820000">Sky Italia HD</configuration>
 	</dvbsconfigs>
 	<sections>
 		<section number="100">Intrattenimento</section>
@@ -28,10 +28,30 @@
 		<section number="600">Bambini</section>
 		<section number="700">Musica</section>
 		<section number="800">Altri</section>
+		<section number="1050">Non indicizzati</section>
 	</sections>
 	<servicehacks>
 <![CDATA[
-if service["number"] > 999 or service["number"] < 100:
+# start: slot some extra channels into vacant slots in the provider list
+########################################################################
+#
+# format: "channel name": number,
+#
+# example: "ITV 2": 118,
+#
+########################################################################
+channels_to_add = {
+	
+}
+if service["service_name"] in channels_to_add and service["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES and channels_to_add[service["service_name"]] not in LCNs_in_use:
+	LCNs_in_use.append(channels_to_add[service["service_name"]])
+	service["number"] = channels_to_add[service["service_name"]]
+	service["numbers"] = [channels_to_add[service["service_name"]]]
+# end: slot some extra channels into vacant slots in the provider list
+
+if service["number"] >= 1000 and service["number"] <= 1450: # not indexed channels
+	pass
+elif service["number"] > 999 or service["number"] < 100:
 	skip = True
 ]]>
 	</servicehacks>
