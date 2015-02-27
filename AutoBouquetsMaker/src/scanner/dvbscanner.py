@@ -468,7 +468,7 @@ class DvbScanner():
 
 		service_extra_count = 0
 
-		for key in tmp_services_dict:
+		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
 
 			if len(servicehacks) > 0:
@@ -602,7 +602,7 @@ class DvbScanner():
 		service_extra_count = 0
 		services_without_transponders = 0
 
-		for key in tmp_services_dict:
+		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
 
 			if config.autobouquetsmaker.skipservices.value and service["orbital_position"] not in orbitals_configured:
@@ -803,7 +803,7 @@ class DvbScanner():
 
 		tmp_services_dict, LCNs_in_use = self.extrasHelper(tmp_services_dict, extras, namespace, True)
 
-		for key in tmp_services_dict:
+		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
 
 			if len(servicehacks) > 0:
@@ -950,6 +950,20 @@ class DvbScanner():
 					print>>log, "[DvbScanner] Deleted double LCN: %d" % (tmp_services_dict[key]["numbers"][0])
 					del tmp_services_dict[key]["numbers"][0]
 
+		#remove other duplicates (single and dual LCN values)
+		tmp_numbers =[]
+		for key in tmp_services_dict:
+			if tmp_services_dict[key]["region_id"] != 0xffff:
+				for number in tmp_services_dict[key]["numbers"]:
+					tmp_numbers.append(number)
+		for key in tmp_services_dict.keys():
+			if tmp_services_dict[key]["region_id"] == 0xffff:
+				for number in tmp_services_dict[key]["numbers"]:
+					if number in tmp_numbers:
+						del tmp_services_dict[key]["numbers"][tmp_services_dict[key]["numbers"].index(number)]
+				if len(tmp_services_dict[key]["numbers"]) == 0:
+					del tmp_services_dict[key]
+
 		if self.sdt_other_table_id == 0x00:
 			mask = 0xff
 		else:
@@ -1005,7 +1019,7 @@ class DvbScanner():
 			print>>log, "[DvbScanner] Cannot fetch SDT for the following transport_stream_id list: ", transport_stream_id_list
 
 		dvbreader.close(fd)
-		
+
 		extras = []
 
 		for key in sdt_secions_status:
@@ -1030,7 +1044,7 @@ class DvbScanner():
 
 		tmp_services_dict, LCNs_in_use = self.extrasHelper(tmp_services_dict, extras, namespace, False)
 
-		for key in tmp_services_dict:
+		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
 
 			if len(servicehacks) > 0:
@@ -1119,3 +1133,7 @@ class DvbScanner():
 				current_lcn += 1
 
 		return tmp_services_dict, LCNs
+
+	def LCN_order(self, tmp_services_dict):
+		sort_list = [(x[0], min(x[1]['numbers'])) for x in tmp_services_dict.items()]
+		return [x[0] for x in sorted(sort_list, key=lambda listItem: listItem[1])]
