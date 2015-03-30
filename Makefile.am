@@ -18,10 +18,6 @@ if DAGS4
 SUBDIRS += TransCodingSetup
 endif
 
-if VUPLUS
-SUBDIRS += VuplusEvent AudioEffect
-endif
-
 if XTREND
 SUBDIRS += XtrendFancontrol Blindscan XtrendRemote
 endif
@@ -170,4 +166,11 @@ endif
 if GB800UEPLUS
 SUBDIRS += AudioEffect
 endif
- 
+
+if VUPLUS
+SUBDIRS += HbbTV AudioEffect
+endif
+
+if XC7362
+SUBDIRS += Blindscan
+endif
