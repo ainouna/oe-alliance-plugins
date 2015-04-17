@@ -122,7 +122,7 @@ if os.path.exists("/proc/stb/info/boxtype"):
 			("fp", _("Front Panel"))
 			]
 		fwdata= {
-			 "micom" : ["http://code-ini.com/software/micom/", "RHS712AU_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+			 "micom" : ["http://feeds.beyonwiz.org/micom/", "RHS712AU_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-8000am":
 		fwlist= [
