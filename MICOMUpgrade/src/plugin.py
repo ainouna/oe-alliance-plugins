@@ -159,9 +159,9 @@ if os.path.exists("/proc/stb/info/boxtype"):
 		fwdata= {
 			 "micom" : ["http://code-ini.com/software/micom/", "INI900RU_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
-			
+
 class Filebrowser(Screen):
-	skin = 	"""
+	skin = """
 		<screen position="center,center" size="500,490" title="File Browser" >
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/yellow.png" position="5,7" size="140,40" alphatest="blend" />		
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/blue-340.png" position="150,7" size="340,40" alphatest="blend" />
@@ -169,21 +169,20 @@ class Filebrowser(Screen):
 			<widget source="key_blue" render="Label" position="150,7" zPosition="1" size="340,40" font="Regular;20" halign="center" valign="center" transparent="1"/>
 			<widget name="file_list" position="0,60" size="500,360" scrollbarMode="showOnDemand" />
 			<widget source="status" render="Label" position="0,430" zPosition="1" size="500,75" font="Regular;18" halign="center" valign="center" backgroundColor="#a08500" transparent="1" />
-                </screen>
-		"""
+		</screen>
+	"""
 
 	def __init__(self, session, parent, firmware):
 		Screen.__init__(self, session)
-                self.session = session
+		self.session = session
 
-		self["key_blue"] = StaticText(_("Download the firmware (latest)"))
+		self["key_blue"] = StaticText(_("Download current firmware"))
 		self["key_yellow"] = StaticText(_("Cancel"))
 
 		self["status"]    = StaticText(" ")
 		self["file_list"] = FileList("/", matchingPattern = "^.*")
 
-		self["actions"] = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", ],
-                {
+		self["actions"] = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", ], {
 			"ok":     self.onClickOk,
 			"cancel": self.onClickCancel,
 			"blue":   self.onClickBlue,
@@ -192,7 +191,7 @@ class Filebrowser(Screen):
 			"down":   self.onClickDown,
 			"left":   self.onClickLeft,
 			"right":  self.onClickRight,
-                }, -1)
+		}, -1)
 
 		self.resetGUI()
 		self.firmware = firmware
@@ -204,7 +203,7 @@ class Filebrowser(Screen):
 		self.setTitle(firmware.upper() + " File Browser")
 
 	def resetGUI(self):
-		self["status"].setText("Select to press OK, Exit to press Cancel.")
+		self["status"].setText("OK to select, Exit to cancel.")
 
 	def setCallback(self, func):
 		self.callback = func
@@ -213,17 +212,17 @@ class Filebrowser(Screen):
 		if self.downloadLock:
 			return
 
-	        if self["file_list"].canDescent() : # isDir
-	        	self["file_list"].descent()
-        		return
+		if self["file_list"].canDescent() : # isDir
+			self["file_list"].descent()
+			return
 
 		# verify data
 		self.gbin = self["file_list"].getCurrentDirectory() + self["file_list"].getFilename()
 		if not os.path.exists(self.gbin):
-			self.session.open(MessageBox, _("Can't found binary file."), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find .bin file."), MessageBox.TYPE_INFO, timeout = 10)
 			return
 		if not os.path.exists(self.gbin+".md5"):
-			self.session.open(MessageBox, _("Can't found MD5 file."), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find .md5 file."), MessageBox.TYPE_INFO, timeout = 10)
 			return
 		try:
 			def checkExt(ext):
@@ -233,24 +232,22 @@ class Filebrowser(Screen):
 			if (self.firmware == "micom" and checkExt(".bin")):
 				self.check_ext = True
 			if self.check_ext == False:
-				self.session.open(MessageBox, _("You chose the incorrect file."), MessageBox.TYPE_INFO)
+				self.session.open(MessageBox, _("You selected the wrong file."), MessageBox.TYPE_INFO)
 				return
 		except:
-			self.session.open(MessageBox, _("You chose the incorrect file."), MessageBox.TYPE_INFO)
+			self.session.open(MessageBox, _("You selected the wrong file."), MessageBox.TYPE_INFO)
 			return
 
 		if os.path.exists("/usr/bin/md5sum") == False:
-			self.session.open(MessageBox, _("Can't find /usr/bin/md5sum"), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find /usr/bin/md5sum"), MessageBox.TYPE_INFO, timeout = 10)
 			return
 		md5sum_A = os.popen("md5sum %s | awk \'{print $1}\'"%(self.gbin)).readline().strip()
 		md5sum_B = os.popen("cat %s.md5 | awk \'{print $1}\'"%(self.gbin)).readline().strip()
 		#print "[FirmwareUpgrade] - Verify : file[%s], md5[%s]"%(md5sum_A,md5sum_B)
 
 		if md5sum_A != md5sum_B:
-			self.session.open(MessageBox, _("Fail to verify data file. \nfile[%s]\nmd5[%s]"%(md5sum_A,md5sum_B)), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("File failed data integrity test.\nCalculated: [%s]\ninstead of: [%s]" % (md5sum_A, md5sum_B)), MessageBox.TYPE_INFO, timeout=10)
 			return
-
-		
 		if self.callback is not None:
 			self.callback(_(self.gbin))
 		self.close()
@@ -262,7 +259,7 @@ class Filebrowser(Screen):
 	# tf  : target file name(string)
 	# bd  : target base directory(string)
 	# cbfunc(string) : callback function(function)
-	def doDownload(self, uri, tf, bd='/tmp', cbfunc=None, errmsg="Fail to download."):
+	def doDownload(self, uri, tf, bd='/tmp', cbfunc=None, errmsg="Failed to download."):
 		tar = bd + "/" + tf
 		#print "[FirmwareUpgrade] - Download Info : [%s][%s]" % (uri, tar)
 		def doHook(blockNumber, blockSize, totalSize) :
@@ -271,18 +268,13 @@ class Filebrowser(Screen):
 		opener = urllib.URLopener()
 		try:
 			opener.open(uri)
-		except:
-			#self.session.open(MessageBox, _("File not found in this URL:\n%s"%(uri)), MessageBox.TYPE_INFO, timeout = 10)
-			print "[FirmwareUpgrade] - Fail to download. URL :",uri
-			self.session.open(MessageBox, _(errmsg), MessageBox.TYPE_INFO, timeout = 10)
-			del opener
-			return False
-		try :
 			f, h = urlretrieve(uri, tar, doHook)
-		except IOError, msg:
-			#self.session.open(MessageBox, _(str(msg)), MessageBox.TYPE_INFO, timeout = 10)
-			print "[FirmwareUpgrade] - Fail to download. ERR_MSG :",str(msg)
-			self.session.open(MessageBox, _(errmsg), MessageBox.TYPE_INFO, timeout = 10)
+		except (Exception) as ex:
+			msg = str(ex)
+			if hasattr(ex, "args") and ex.args:
+				msg = " ".join([str(x) for x in ex.args[:3]])
+			print "[FirmwareUpgrade] - Failed to download:", uri, str(ex)
+			self.session.open(MessageBox, "%s\n%s" % (_(errmsg), msg), MessageBox.TYPE_INFO, timeout = 10)
 			del opener
 			return False
 		del opener
@@ -294,7 +286,7 @@ class Filebrowser(Screen):
 
 		def cbDownloadDone(tar):
 			try:
-				self["status"].setText("Downloaded : %s\nSelect to press OK, Exit to press Cancel."%(tar))
+				self["status"].setText("Downloaded: %s\nOK to select, Exit to cancel." % (tar))
 			except:
 				pass
 		# target
@@ -310,21 +302,21 @@ class Filebrowser(Screen):
 		os.system("rm -f /tmp/" + root_file)
 
 		# md5
-		if not self.doDownload(self.guri+".md5", self.gbin+".md5", cbfunc=cbDownloadDone, errmsg="Can't download the checksum file."):
+		if not self.doDownload(self.guri+".md5", self.gbin+".md5", cbfunc=cbDownloadDone, errmsg="Can not download .md5 file."):
 			self.resetGUI()
 			self.downloadLock = False
 			return
 		# data
-		if not self.doDownload(self.guri, self.gbin, cbfunc=cbDownloadDone, errmsg="Can't download the firmware file."):
+		if not self.doDownload(self.guri, self.gbin, cbfunc=cbDownloadDone, errmsg="Can not download .bin file."):
 			self.resetGUI()
 			self.downloadLock = False
 			return
 		# version
-		if not self.doDownload(self.guri+".version", self.gbin+".version", cbfunc=cbDownloadDone, errmsg="Can't download the version file."):
+		if not self.doDownload(self.guri+".version", self.gbin+".version", cbfunc=cbDownloadDone, errmsg="Can not download .version file."):
 			self.resetGUI()
 			self.downloadLock = False
 			return
-		      
+
 		t = ''
 		self["file_list"].changeDir("/tmp/")
 		self["file_list"].moveToIndex(0)
@@ -343,10 +335,10 @@ class Filebrowser(Screen):
 			return
 		self.downloadLock = True
 		if not os.path.exists("/proc/stb/info/boxtype"):
-			self.session.open(MessageBox, _("Can't found model name."), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find hardware model name."), MessageBox.TYPE_INFO, timeout = 10)
 			self.downloadLock = False
 			return
-		self["status"].setText("Please wait during download.")
+		self["status"].setText("Please wait for download.")
 		self.timer_downloading = eTimer()
 		self.timer_downloading.callback.append(self.runDownloading)
 		self.timer_downloading.start(1000)
@@ -379,7 +371,7 @@ class Filebrowser(Screen):
 		None
 
 class FirmwareUpgrade(Screen):
-	skin = 	"""
+	skin = """
 		<screen position="center,center" size="530,295" title="Firmware Upgrade" >
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/red.png" position="80,7" size="140,40" alphatest="blend" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/green.png" position="320,7" size="140,40" alphatest="blend" />
@@ -390,12 +382,12 @@ class FirmwareUpgrade(Screen):
 			<widget name="oldversion" position="320,100" size="100,25" font="Regular;20" />
 			<widget name="newversion" position="320,125" size="100,25" font="Regular;20" />
 			<widget source="status" render="Label" position="0,180" zPosition="1" size="510,75" font="Regular;20" halign="center" valign="center" backgroundColor="#a08500" transparent="1" />
-                </screen>
-		"""
+		</screen>
+"""
 
 	def __init__(self, session):
 		Screen.__init__(self, session)
-                self.session = session
+		self.session = session
 
 		self["shortcuts"] = ActionMap(["ShortcutActions", "SetupActions" ],
 		{
@@ -435,7 +427,7 @@ class FirmwareUpgrade(Screen):
 		global fwlist
 		if fwlist is None:
 			self["key_green"] = StaticText(" ")
-			self["status"] = StaticText(_("This plugin is supported only the INI-Series."))
+			self["status"] = StaticText(_("This plugin does not support your hardware."))
 		else:
 			self["key_green"] = StaticText(_("Upgrade"))
 			self["status"] = StaticText(" ")
@@ -449,7 +441,7 @@ class FirmwareUpgrade(Screen):
 		if message is not None:
 			self.rebootLock = reboot
 		if not self.rebootLock:
-			self["status"].setText("Press the Green/OK button to upgrade")
+			self["status"].setText("Press Green/OK to upgrade.")
 
 	def doReboot(self):
 		from Screens.Standby import TryQuitMainloop
@@ -470,30 +462,30 @@ class FirmwareUpgrade(Screen):
 			# HACK for samples, which does not have micom version
 			try:
 				if int(self.verfile) <= int(self.version):
-					self["status"].setText("You have already latest front panel version")
+					self["status"].setText("You already have the latest front panel version.")
 				else:
-					self["status"].setText("Press the Green/OK button, if you want to upgrade to this file:\n%s\n" % (data))
+					self["status"].setText("Press Green/OK button to upgrade to this file:\n%s\n" % (data))
 			except:
-				self["status"].setText("Press the Green/OK button, if you want to upgrade to this file:\n%s\n" % (data))
+				self["status"].setText("Press Green/OK button to upgrade to this file:\n%s\n" % (data))
 			self.updateFilePath = data
 			if self.fileopenmode == False:
 				self.upgrade_auto_run_timer.start(1000)
-		
+
 	def cbRunUpgrade(self, ret):
 		if ret == False:
 			return
 
 		if self.updateFilePath == "":
-			self.session.open(MessageBox, _("No selected binary data!!"), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("No .bin update file selected!"), MessageBox.TYPE_INFO, timeout = 10)
 			return
 		device = None
 		for d in fwdata['micom'][2].split(';'):
 			if os.path.exists(d):
 				device = d
 		if device is None:
-			self.session.open(MessageBox, _("Can't found device file!!"), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find the device file!"), MessageBox.TYPE_INFO, timeout = 10)
 			return
-		      
+
 		copyfile(self.updateFilePath,"/tmp/micom.bin")
 		self.doReboot()
 		return
@@ -515,12 +507,12 @@ class FirmwareUpgrade(Screen):
 		# check if downloaded verion is newer then flashed one
 		# HACK for samples, which does not have micom version
 		try:
-			if int(self.verfile) <= int(self.version):      
+			if int(self.verfile) <= int(self.version):
 				self.session.open(MessageBox, _("You can not upgrade to the same or lower version !"), MessageBox.TYPE_INFO, timeout = 10)
 				return
 		except:
 			pass # always flash when no micom version
-		msg = "You should not be stop during the upgrade.\nDo you want to upgrade?"
+		msg = "You must not interrupt the upgrade process.\nDo you want to upgrade?"
 		self.session.openWithCallback(self.cbRunUpgrade, MessageBox, _(msg), MessageBox.TYPE_YESNO, timeout = 15, default = True)
 		self.fileopenmode = False
 
@@ -538,9 +530,9 @@ def start_menu_main(menuid, **kwargs):
 		return [(_("Front Panel Update"), main, "ft_control", None)]
 	else:
 		return []
-	      
+
 def main(session, **kwargs):
-        session.open(FirmwareUpgrade)
+	session.open(FirmwareUpgrade)
 
 def Plugins(**kwargs):
 	l = []
