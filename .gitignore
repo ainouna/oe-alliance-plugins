@@ -1,2 +1,5 @@
 *.mo
 .DS_Store
+/.*project
+/.settings
+/*.kdev4
