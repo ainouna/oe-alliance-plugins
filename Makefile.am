@@ -79,7 +79,7 @@ SUBDIRS += INIVFDControl
 endif
 
 if INI
-SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade
+SUBDIRS += VentonFancontrol Blindscan MICOMUpgrade HbbTV
 endif
 
 if INIHDP
