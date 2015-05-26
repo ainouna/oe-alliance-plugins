@@ -35,7 +35,7 @@ class RemoteControlCodeInit:
 		return 0
 
 	def getModel(self):
-		if getBoxType() in ("vuuno", "vuultimo", "vusolo2" ,"vuduo2", "vusolose"):
+		if getBoxType() in ("vuuno", "vuultimo", "vusolo2" ,"vuduo2", "vusolose", "vuzero"):
 			return True
 		else:
 			return False
@@ -77,7 +77,7 @@ class RemoteControlCode(Screen,ConfigListScreen,RemoteControlCodeInit):
 			self.checkModelTimer.start(1000,True)
 
 	def invalidmodel(self):
-		self.session.openWithCallback(self.close, MessageBox, _("This Plugin only supports") + " Uno/Ultimo/Solo2/Duo2", MessageBox.TYPE_ERROR)
+		self.session.openWithCallback(self.close, MessageBox, _("Sorry, but %s is not supported.") % getBoxType(), MessageBox.TYPE_ERROR)
 
 	def createSetup(self):
 		self.list = []

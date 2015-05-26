@@ -127,12 +127,13 @@ AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(SH2, test `echo "$BOXTYPE"` == "sh2")
 AM_CONDITIONAL(SPARK, test `echo "$BOXTYPE" | cut -b 1-5` == spark)
 AM_CONDITIONAL(XC7362, test "$BOXTYPE" == xc7362)
+AM_CONDITIONAL(XC7358, test "$BOXTYPE" == xc7358)
+AM_CONDITIONAL(XC7358CI, test "$BOXTYPE" == xc7358ci)
 if test `echo "$BOXTYPE" | cut -b 1-2` == "dm"; then
 	AC_DEFINE(DREAMBOX, 1, [Dreambox hardware])
 fi
 
 AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == tmsingle -o "$BOXTYPE" == tmtwin -o "$BOXTYPE" == tm2t -o "$BOXTYPE" == tmnano -o "$BOXTYPE" == iqonios100hd -o "$BOXTYPE" == iqonios200hd -o "$BOXTYPE" == iqonios300hd -o "$BOXTYPE" == optimussos1 -o "$BOXTYPE" == optimussos2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5)
-AM_CONDITIONAL(HAVE_WIRELESSACCESSPOINT, test "$BOXTYPE" != cube -a `echo "$BOXTYPE" | cut -b 1-5` != spark)
 
 AC_CONFIG_FILES([
 Makefile
@@ -178,6 +179,10 @@ DLNABrowser/meta/Makefile
 DLNAServer/Makefile
 DLNAServer/src/Makefile
 DLNAServer/meta/Makefile
+
+DMBlindscan/Makefile
+DMBlindscan/src/Makefile
+DMBlindscan/meta/Makefile
 
 FirmwareUpgrade/Makefile
 FirmwareUpgrade/src/Makefile
@@ -292,6 +297,11 @@ TunerServer/Makefile
 TunerServer/src/Makefile
 TunerServer/meta/Makefile
 TunerServer/po/Makefile
+
+SatipClient/Makefile
+SatipClient/src/Makefile
+SatipClient/po/Makefile
+SatipClient/meta/Makefile
 
 SF8VFDControl/Makefile
 SF8VFDControl/src/Makefile

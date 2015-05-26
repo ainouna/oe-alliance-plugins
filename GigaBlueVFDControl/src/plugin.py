@@ -18,6 +18,9 @@ from Components.ServiceList import ServiceList
 from Screens.InfoBar import InfoBar
 from time import localtime, time
 import Screens.Standby
+from enigma import pNavigation
+import Components.RecordingConfig
+from Components.Harddisk import harddiskmanager
 
 BOX = getBoxType()
 
@@ -32,6 +35,8 @@ config.plugins.VFD_Giga.ledRUN = ConfigSelection(led, default = "1")
 config.plugins.VFD_Giga.ledSBY = ConfigSelection(led, default = "2")
 config.plugins.VFD_Giga.ledREC = ConfigSelection(led, default = "3")
 config.plugins.VFD_Giga.ledDSBY = ConfigSelection(led, default = "2")
+config.plugins.VFD_Giga.ledSDA1 = ConfigSelection(led, default = "0")
+config.plugins.VFD_Giga.ledSDB1 = ConfigSelection(led, default = "0")
 config.plugins.VFD_Giga.timeMode = ConfigSelection(default = "24h", choices = [("12h"),("24h")])
 config.plugins.VFD_Giga.vfdBrightness = ConfigSlider(default=255, increment = 5, limits=(0,255))
 config.plugins.VFD_Giga.vfdBrightnessStandby = ConfigSlider(default=255, increment = 5, limits=(0,255))
@@ -213,29 +218,56 @@ class Channelnumber:
 
 	def RecordingLed(self):
 		global RecLed
-		recordings = self.session.nav.getRecordings()
+		led_sda1 = "0"
+		if config.plugins.VFD_Giga.ledSDA1.getValue() != "0":
+			try:
+				for hdd in harddiskmanager.HDDList():
+					if hdd[1].getDeviceName().startswith("/dev/sda"):
+						if not hdd[1].isSleeping():
+							led_sda1 = config.plugins.VFD_Giga.ledSDA1.getValue()
+			except:
+				pass
+		led_sdb1 = "0"
+		if config.plugins.VFD_Giga.ledSDB1.getValue() != "0":
+			try:
+				for hdd in harddiskmanager.HDDList():
+					if hdd[1].getDeviceName().startswith("/dev/sdb"):
+						if not hdd[1].isSleeping():
+							led_sdb1 = config.plugins.VFD_Giga.ledSDB1.getValue()
+			except:
+				pass
+		try:
+			#not all images support recording type indicators
+			recordings = self.session.nav.getRecordings(False,Components.RecordingConfig.recType(config.recording.show_rec_symbol_for_rec_types.getValue()))
+		except:
+			recordings = self.session.nav.getRecordings()
+		led_rec = "0"
 		if recordings:
 			self.updatetime = 1000
 			if not config.plugins.VFD_Giga.recLedBlink.value:
 				self.blink = True
 			if self.blink:
-				setLed(config.plugins.VFD_Giga.ledREC.getValue())
+				led_rec = config.plugins.VFD_Giga.ledREC.getValue()
 			else:
 				if config.plugins.VFD_Giga.ledREC.value == "3":
-					setLed("2")
+					led_rec = "2"
 				else:
-					setLed("0")
+					led_rec = "0"
 			self.blink = not self.blink
 			RecLed = True
 		else:
-			self.updatetime = 10000
+			if (config.plugins.VFD_Giga.ledSDA1.getValue() != "0") or (config.plugins.VFD_Giga.ledSDB1.getValue() != "0"):
+				self.updatetime = 1000
+			else:
+				self.updatetime = 10000
 			if RecLed is not None:
 				RecLed = None
-				if Screens.Standby.inStandby:
-					setLed(config.plugins.VFD_Giga.ledSBY.getValue())
-				else:
-					setLed(config.plugins.VFD_Giga.ledRUN.getValue())
-
+			if Screens.Standby.inStandby:
+				led_rec = config.plugins.VFD_Giga.ledSBY.getValue()
+			else:
+				led_rec = config.plugins.VFD_Giga.ledRUN.getValue()
+		setLed(str(int(led_sda1) | int(led_sdb1) | int(led_rec)))
+					
 	def keyPressed(self, key, tag):
 		self.begin = time() + int(self.channelnrdelay)
 		self.endkeypress = True
@@ -360,6 +392,8 @@ class LED_GigaSetup(ConfigListScreen, Screen):
 				self.list.append(getConfigListEntry(_("Led state Deep Standby"), config.plugins.VFD_Giga.ledDSBY))
 			self.list.append(getConfigListEntry(_("Led state Record"), config.plugins.VFD_Giga.ledREC))
 			self.list.append(getConfigListEntry(_("Blink Record Led"), config.plugins.VFD_Giga.recLedBlink))
+			self.list.append(getConfigListEntry(_("Led state HDD /dev/sda active"), config.plugins.VFD_Giga.ledSDA1))
+			self.list.append(getConfigListEntry(_("Led state HDD /dev/sdb active"), config.plugins.VFD_Giga.ledSDB1))
 			setLed(config.plugins.VFD_Giga.ledRUN.getValue())
 		else:
 			setLed("0")
@@ -450,12 +484,13 @@ class LED_Giga:
 	config.misc.standbyCounter.addNotifier(standbyCounterChanged, initial_call = False)
 
 def main(menuid, **kwargs):
-	if getImageDistro() in ("openvix", "openvixhd"):
-		if menuid == "display":
-			if BOX in ('gb800se', 'gb800solo', 'gb800seplus', 'gbultra', 'gbultrase'):
-				return [(_("Display/LED"), startLED, "LED_Giga", None)]
-			else:
-				return [(_("LED"), startLED, "LED_Giga", None)]
+	if getImageDistro() == "openvix":
+		if BOX in ('gb800se', 'gb800solo') and menuid == "leddisplay":
+			return [(_("Display/LED"), startLED, "LED_Giga", None)]
+		elif BOX in ('gb800seplus', 'gbultra', 'gbultrase') and menuid == "display":
+			return [(_("Display/LED"), startLED, "LED_Giga", None)]
+		elif menuid == "display":
+			return [(_("LED"), startLED, "LED_Giga", None)]
 		else:
 			return []
 	else:
