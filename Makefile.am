@@ -156,27 +156,23 @@ SUBDIRS += TempFanControl
 endif
 
 if GBQUADPLUS
-SUBDIRS += AudioEffect TransCodingSetup
+SUBDIRS += TransCodingSetup
 endif
 
 if GBQUAD
-SUBDIRS += AudioEffect TransCodingSetup
-endif
-
-if GB800SEPLUS
-SUBDIRS += AudioEffect
-endif
-
-if GB800UEPLUS
-SUBDIRS += AudioEffect
+SUBDIRS += TransCodingSetup
 endif
 
 if VUPLUS
 SUBDIRS += HbbTV AudioEffect
 endif
 
+if WETEK
+SUBDIRS += RCUSelect
+endif
+
 if XC7362
-SUBDIRS += Blindscan
+SUBDIRS += Blindscan VPLEDControl
 endif
 
 if XC7358

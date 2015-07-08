@@ -561,7 +561,7 @@ class Blindscan(ConfigListScreen, Screen):
 			status_box_start_freq = temp_start_int_freq + uni_lnb_loc_osc[band]
 			status_box_end_freq = temp_end_int_freq + uni_lnb_loc_osc[band]
 			
-		if brandoem == 'ini':
+		if brandoem == 'ini' or brandoem == 'home':
 			cmd = "ini_blindscan %d %d %d %d %d %d %d %d" % (temp_start_int_freq, temp_end_int_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid)) 
 		elif brandoem == 'vuplus':
 			try:
@@ -639,6 +639,7 @@ class Blindscan(ConfigListScreen, Screen):
 						"FEC_1_2" : parm.FEC_1_2,
 						"FEC_2_3" : parm.FEC_2_3,
 						"FEC_3_4" : parm.FEC_3_4,
+						"FEC_4_5" : parm.FEC_4_5,
 						"FEC_5_6": parm.FEC_5_6,
 						"FEC_7_8" : parm.FEC_7_8,
 						"FEC_8_9" : parm.FEC_8_9,
