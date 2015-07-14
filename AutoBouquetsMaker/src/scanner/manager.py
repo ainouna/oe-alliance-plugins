@@ -7,7 +7,7 @@ from tools import Tools
 from .. import log
 
 class Manager():
-	
+
 	ABM_PREFIX = "userbouquet.abm."
 
 	def __init__(self):
@@ -62,7 +62,16 @@ class Manager():
 		self.transponders = reader.readLamedb(self.path)
 		print>>log, "[Manager] Done"
 
-	def save(self):
+	def save(self, providers, dependent_providers = {}):
+		#merge dependent providers
+		for provider_key in dependent_providers:
+			if provider_key in self.services:
+				for dependent_key in dependent_providers[provider_key]:
+					if dependent_key in self.services:
+						for type in ["video", "radio"]:
+							for number in self.services[dependent_key][type]:
+								self.services[provider_key][type][number] = self.services[dependent_key][type][number]
+
 		print>>log, "[Manager] Saving..."
 
 		old_bouquets = BouquetsReader().getBouquetsList(self.path)
@@ -81,9 +90,6 @@ class Manager():
 			self.bouquetsToKeep["tv"] = []
 		if "radio" not in self.bouquetsToKeep:
 			self.bouquetsToKeep["radio"] = []
-		
-		# selective rescan	
-		currentBouquets, self.bouquetsToKeep = self.checkRescan2(currentBouquets, self.bouquetsToKeep, old_bouquets)
 
 		print>>log, "[Manager] Bouquets to hide:", self.bouquetsToHide
 		print>>log, "[Manager] TV bouquets to keep:", self.bouquetsToKeep["tv"]
@@ -96,8 +102,22 @@ class Manager():
 
 		writer = BouquetsWriter()
 		writer.writeLamedb(self.path, self.transponders)
-		providers = Providers().read()
+		#providers = Providers().read()
 		bouquetsToHide = []
+		
+		for provider_key in self.bouquetsOrder:
+			if provider_key in providers:
+				# CustomLCN
+				self.services[provider_key] = Tools().customLCN(self.services[provider_key], provider_key, self.providerConfigs[provider_key].getArea())
+				
+				# FTA_only
+				if config.autobouquetsmaker.level.value == "expert" and provider_key in config.autobouquetsmaker.FTA_only.value:
+					video_services_tmp = {}
+					for number in self.services[provider_key]["video"]:
+						if self.services[provider_key]["video"][number]["free_ca"] == 0:
+							video_services_tmp[number] = self.services[provider_key]["video"][number]
+					self.services[provider_key]["video"] = video_services_tmp
+				
 		for provider_key in self.bouquetsOrder:
 			if provider_key in providers:
 				bouquetsToHide = []
@@ -145,16 +165,22 @@ class Manager():
 					channelsontop = providers[provider_key]["sdchannelsontop"],
 				else:
 					channelsontop = providers[provider_key]["hdchannelsontop"],
+
+				# swap services between providers
+				services, providers[provider_key]["sections"] = Tools().customMix(self.services, provider_key, providers[provider_key]["sections"])
+
 				writer.buildBouquets(self.path,
 						self.providerConfigs[provider_key],
-						self.services[provider_key],
+						services,
 						providers[provider_key]["sections"],
 						provider_key,
 						preferred_order,
 						channelsontop,
 						bouquetsToHide,
-						prefix,
-						current_bouquet_key)
+						prefix)
+
+		# add a custom favourites list
+		Tools().favourites(self.path, self.services, providers, self.providerConfigs, self.bouquetsOrder)
 
 		writer.buildBouquetsIndex(self.path, self.bouquetsOrder, providers,
 				self.bouquetsToKeep, currentBouquets, self.bouquetsToHide,
@@ -162,31 +188,24 @@ class Manager():
 
 		print>>log, "[Manager] Done"
 
-	def read(self, provider_config):
+	def read(self, provider_config, providers):
 		ret = False
 		provider_key = provider_config.getProvider()
 		bouquet_key = provider_config.getArea()
-		
+
 		if bouquet_key is not None and len(bouquet_key) > 0:
 			print>>log, "[Manager] Reading %s (%s)..." % (provider_key, bouquet_key)
 		else:
 			print>>log, "[Manager] Reading %s..." % provider_key
 
-		# read custom transponder file
-		transponder_dict_tmp = {}
-		transponder_tmp = {}
-		transponder_dict_tmp = Tools().customtransponder(provider_key)
-		if len(transponder_dict_tmp) > 0:
-			for key in transponder_dict_tmp:
-				if bouquet_key is not None and len(bouquet_key) > 0:
-					if transponder_dict_tmp[key]["key"] == bouquet_key:
-						transponder_tmp[key] = transponder_dict_tmp[key]
-				else:
-					transponder_tmp[key] = transponder_dict_tmp[key]
-					
+		# read custom transponder
+		customtransponders = {}
+		if bouquet_key is not None and len(bouquet_key) > 0:
+			customtransponders = Tools().customtransponder(provider_key, bouquet_key)
+
 		self.providerConfigs[provider_key] = provider_config
 
-		providers = Providers().read()
+		#providers = Providers().read()
 		if provider_key in providers:
 			if bouquet_key in providers[provider_key]["bouquets"] or providers[provider_key]["protocol"] != "sky":
 				scanner = DvbScanner()
@@ -198,20 +217,26 @@ class Manager():
 				scanner.setNitCurrentTableId(providers[provider_key]["transponder"]["nit_current_table_id"])
 				scanner.setNitOtherTableId(providers[provider_key]["transponder"]["nit_other_table_id"])
 
-				if providers[provider_key]["protocol"] == "lcn" or providers[provider_key]["protocol"] == "lcn2" or providers[provider_key]["protocol"] == "nolcn":
+				if providers[provider_key]["protocol"] in ('lcn', 'lcn2', 'nolcn', 'vmuk'):
 					scanner.setSdtPid(providers[provider_key]["transponder"]["sdt_pid"])
 					scanner.setSdtCurrentTableId(providers[provider_key]["transponder"]["sdt_current_table_id"])
 					scanner.setSdtOtherTableId(providers[provider_key]["transponder"]["sdt_other_table_id"])
 
 					if providers[provider_key]["streamtype"] == 'dvbc':
 						bouquet = providers[provider_key]["bouquets"][bouquet_key]
-						tmp = scanner.updateTransponders(transponder_tmp, self.transponders, True, bouquet["netid"],bouquet["bouquettype"])
+						tmp = scanner.updateTransponders(self.transponders, True, customtransponders, bouquet["netid"],bouquet["bouquettype"])
 					else:
-						tmp = scanner.updateTransponders(transponder_tmp, self.transponders, True)
-					self.services[provider_key] = scanner.updateAndReadServicesLCN(
-							providers[provider_key]["namespace"], self.transponders,
-							providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
-							tmp["logical_channel_number_dict"], tmp["service_dict_tmp"], providers[provider_key]["protocol"])
+						tmp = scanner.updateTransponders(self.transponders, True, customtransponders)
+					if providers[provider_key]["protocol"] == 'vmuk':
+						self.services[provider_key] = scanner.updateAndReadServicesVMUK(
+								providers[provider_key]["namespace"], self.transponders,
+								providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
+								tmp["service_dict_tmp"], bouquet_key)					
+					else:
+						self.services[provider_key] = scanner.updateAndReadServicesLCN(
+								providers[provider_key]["namespace"], self.transponders,
+								providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
+								tmp["logical_channel_number_dict"], tmp["service_dict_tmp"], providers[provider_key]["protocol"], bouquet_key)
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0
 
@@ -222,7 +247,7 @@ class Manager():
 					scanner.setFastscanPid(providers[provider_key]["transponder"]["fastscan_pid"])
 					scanner.setFastscanTableId(providers[provider_key]["transponder"]["fastscan_table_id"])
 
-					tmp = scanner.updateTransponders(transponder_tmp, self.transponders, True)
+					tmp = scanner.updateTransponders(self.transponders, True)
 					self.services[provider_key] = scanner.updateAndReadServicesFastscan(
 							providers[provider_key]["namespace"], self.transponders,
 							providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
@@ -240,7 +265,7 @@ class Manager():
 					scanner.setBatPid(providers[provider_key]["transponder"]["bat_pid"])
 					scanner.setBatTableId(providers[provider_key]["transponder"]["bat_table_id"])
 
-					scanner.updateTransponders(transponder_tmp, self.transponders, False)
+					scanner.updateTransponders(self.transponders, False)
 					bouquet = providers[provider_key]["bouquets"][bouquet_key]
 					self.services[provider_key] = scanner.updateAndReadServicesSKY(bouquet["bouquet"],
 							bouquet["region"], bouquet["namespace"], bouquet["key"], self.transponders,
@@ -258,7 +283,7 @@ class Manager():
 					scanner.setBatPid(providers[provider_key]["transponder"]["bat_pid"])
 					scanner.setBatTableId(providers[provider_key]["transponder"]["bat_table_id"])
 
-					scanner.updateTransponders(transponder_tmp, self.transponders, False)
+					scanner.updateTransponders(self.transponders, False)
 					bouquet = providers[provider_key]["bouquets"][bouquet_key]
 					self.services[provider_key] = scanner.updateAndReadServicesFreeSat(bouquet["bouquet"],
 							bouquet["region"], bouquet["namespace"], bouquet["key"], self.transponders,
@@ -268,13 +293,15 @@ class Manager():
 
 					self.serviceVideoRead += len(self.services[provider_key]["video"].keys())
 					self.serviceAudioRead += len(self.services[provider_key]["radio"].keys())
-				
+
 				else:
 					print>>log, "[Manager] Unsupported protocol %s" % providers[provider_key]["protocol"]
 					ret = False
 
 				if provider_key not in self.bouquetsOrder:
-					self.bouquetsOrder.append(provider_key)
+					if provider_key in config.autobouquetsmaker.providers.value: # not a descendent provider
+						self.bouquetsOrder.append(provider_key)
+
 		print>>log, "[Manager] Done"
 		return ret
 
@@ -283,62 +310,6 @@ class Manager():
 
 	def getProviders(self):
 		return Providers().read()
-		
-	def checkRescan(self, providers):
-		# remove previously scanned providers from "providers"
-		no_rescan = config.autobouquetsmaker.no_rescan.value
-		if config.autobouquetsmaker.level.value == "simple" or no_rescan == '':
-			return providers
-		no_rescan = no_rescan.split('|')
-		current_abm_bouquets = []
-		old_bouquets = self.getBouquetsList()
-		if "tv" not in old_bouquets:
-			old_bouquets["tv"] = []
-		if "radio" not in old_bouquets:
-			old_bouquets["radio"] = []
-		for bouquet_type in ["tv", "radio"]:
-			for bouquet in old_bouquets[bouquet_type]:
-				if bouquet["filename"][:len(self.ABM_PREFIX)] == self.ABM_PREFIX:
-					providername = bouquet["filename"][len(self.ABM_PREFIX):].split('.')[0]
-					if providername not in current_abm_bouquets:
-						current_abm_bouquets.append(providername)
-		remove_provider_from_scan = []
-		for provider in current_abm_bouquets:
-			if provider in no_rescan and provider not in remove_provider_from_scan:
-				remove_provider_from_scan.append(provider)
-		new_providers = []
-		for provider in providers:
-			if provider.split(':')[0] not in remove_provider_from_scan:
-				new_providers.append(provider)
-		return new_providers
-				
-	def checkRescan2(self, currentbouquets, bouquetstokeep, oldbouquets):
-		# update "currentbouquets" and "bouquetstokeep" to include "no rescan" bouquets
-		no_rescan = config.autobouquetsmaker.no_rescan.value
-		if config.autobouquetsmaker.level.value == "simple" or no_rescan == '':
-			return currentbouquets, bouquetstokeep
-		no_rescanProviders = no_rescan.split('|')		
-		toHide = []
-		toRename = []
-		
-		for bouquet_type in ["tv", "radio"]:
-			for bouquet in oldbouquets[bouquet_type]:
-				for provider in no_rescanProviders:
-					if provider in bouquet["filename"]:
-						toRename.append(bouquet["filename"])
-						if "Unknown" in bouquet["name"] or "Separator" in bouquet["name"]: # These get the hidden flag in bouquetwriter
-							toHide.append(bouquet["filename"])
-						break
-							
-		for bouquet_type in ["tv", "radio"]:
-			for bouquet in currentbouquets[bouquet_type]:
-				if bouquet in toRename:
-					currentbouquets[bouquet_type][currentbouquets[bouquet_type].index(bouquet)] = self.ABM_PREFIX[:-1] + '+' + bouquet[len(self.ABM_PREFIX)-1:]
-					if bouquet not in toHide:
-						bouquetstokeep[bouquet_type].append(bouquet)
-						
-		return currentbouquets, bouquetstokeep
-		
 
 #manager = Manager()
 # #print manager.getBouquetsList()

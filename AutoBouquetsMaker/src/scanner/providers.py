@@ -1,9 +1,10 @@
 from .. import log
 import os
 import xml.dom.minidom
+import cPickle as pickle
 
 class Providers():
-	VALID_PROTOCOLS = [ "sky", "lcn", "lcn2", "nolcn", "fastscan", "freesat", "lcnbat" ]
+	VALID_PROTOCOLS = [ "fastscan", "freesat", "lcn", "lcn2", "nolcn", "sky", "vmuk" ]
 	PROVIDERS_DIR = os.path.dirname(__file__) + "/../providers"
 	def parseXML(self, filename):
 		try:
@@ -21,7 +22,7 @@ class Providers():
 
 		provider.close()
 		return dom
-		
+
 	def providerFileExists(self, name):
 		providers_dir = self.PROVIDERS_DIR
 		filename = name + ".xml"
@@ -29,12 +30,31 @@ class Providers():
 
 	def read(self):
 		providers_dir = self.PROVIDERS_DIR
+		cachefile = "providers.cache" # cache file
 		providers = {}
-
+		
+		# check if providers cache exists and data is fresh
+		newest = 0
 		for filename in os.listdir(providers_dir):
 			if filename[-4:] != ".xml":
 				continue
+			filetime = os.path.getmtime(providers_dir + "/" + filename)
+			if filetime > newest:
+				newest = filetime
+		try:
+			if os.path.exists(providers_dir + "/" + cachefile) and os.path.getmtime(providers_dir + "/" + cachefile) > newest:
+				with open(providers_dir + "/" + cachefile, 'rb') as cache_input:
+					providers = pickle.load(cache_input)
+					cache_input.close()
+					return providers
+		except:
+			pass
 
+		# cache file does not exist or data is stale
+		for filename in os.listdir(providers_dir):
+			if filename[-4:] != ".xml":
+				continue
+			
 			dom = self.parseXML(providers_dir + "/" + filename)
 			if dom is None:
 				continue
@@ -44,6 +64,7 @@ class Providers():
 			provider["swapchannels"] = []
 			provider["hdchannelsontop"] = []
 			provider["sdchannelsontop"] = []
+			provider["dependent"] = ''
 			if dom.documentElement.nodeType == dom.documentElement.ELEMENT_NODE and dom.documentElement.tagName == "provider":
 				for node in dom.documentElement.childNodes:
 					if node.nodeType != node.ELEMENT_NODE:
@@ -330,12 +351,17 @@ class Providers():
 								for i in range(0, node2.attributes.length):
 									if node2.attributes.item(i).name == "number":
 										provider["sdchannelsontop"].append(int(node2.attributes.item(i).value))
-										
+
 					elif node.tagName == "servicehacks":
 						node.normalize()
 						for i in range(0, len(node.childNodes)):
 							if node.childNodes[i].nodeType == node.CDATA_SECTION_NODE:
 								provider["servicehacks"] = node.childNodes[i].data.strip()
+
+					elif node.tagName == "dependent":
+						node.normalize()
+						if len(node.childNodes) == 1 and node.childNodes[0].nodeType == node.TEXT_NODE:
+							provider["dependent"] = node.childNodes[0].data.encode("utf-8")
 
 			if not ("name" in provider
 					and "protocol" in provider
@@ -350,5 +376,10 @@ class Providers():
 				continue
 
 			providers[provider["key"]] = provider
-
+		try: 
+			with open(providers_dir + "/" + cachefile, 'wb') as cache_output:
+				pickle.dump(providers, cache_output, pickle.HIGHEST_PROTOCOL)
+				cache_output.close()
+		except:
+			pass
 		return providers

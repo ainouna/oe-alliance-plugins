@@ -43,7 +43,7 @@ class AutoBouquetsMaker(Screen):
 	LOCK_TIMEOUT_FIXED = 100 	# 100ms for tick - 10 sec
 	LOCK_TIMEOUT_ROTOR = 1200 	# 100ms for tick - 120 sec
 	ABM_BOUQUET_PREFIX = "userbouquet.abm."
-		
+
 	def __init__(self, session, args = 0):
 		self.printconfig()
 		self.session = session
@@ -59,6 +59,18 @@ class AutoBouquetsMaker(Screen):
 		self.rawchannel = None
 		self.postScanService = None
 		self.providers = Manager().getProviders()
+
+		# dependent providers
+		self.dependents = {}
+		for provider_key in self.providers:
+			if len(self.providers[provider_key]["dependent"]) > 0 and self.providers[provider_key]["dependent"] in self.providers:
+				if self.providers[provider_key]["dependent"] not in self.dependents:
+					self.dependents[self.providers[provider_key]["dependent"]] = []
+				self.dependents[self.providers[provider_key]["dependent"]].append(provider_key)
+
+		# get ABM config string including dependents
+		self.abm_settings_str = self.getABMsettings()
+
 		self.actionsList = []
 
 		self.onFirstExecBegin.append(self.firstExec)
@@ -74,7 +86,7 @@ class AutoBouquetsMaker(Screen):
 				png = "%s/../images/background.png" % os.path.dirname(sys.modules[__name__].__file__)
 			self["background"].instance.setPixmapFromFile(png)
 
-		if len(config.autobouquetsmaker.providers.value) > 0:
+		if len(self.abm_settings_str) > 0:
 			if not inStandby:
 				self["action"].setText(_('Loading bouquets...'))
 				self["status"].setText(_("Services: 0 video - 0 radio"))
@@ -114,11 +126,8 @@ class AutoBouquetsMaker(Screen):
 		self.selectedProviders = {}
 		self.actionsList = []
 
-		providers_tmp = config.autobouquetsmaker.providers.value.split("|")
-		
-		# selective rescan
-		providers_tmp = self.manager.checkRescan(providers_tmp)
-		
+		providers_tmp = self.abm_settings_str.split("|")
+
 		for provider_tmp in providers_tmp:
 			provider_config = ProviderConfig(provider_tmp)
 			if provider_config.isValid() and Providers().providerFileExists(provider_config.getProvider()):
@@ -208,7 +217,7 @@ class AutoBouquetsMaker(Screen):
 			transponder = self.providers[self.currentAction]["transponder"]
 		else:
 			bouquet_key = None
-			providers_tmp = config.autobouquetsmaker.providers.value.split("|")
+			providers_tmp = self.abm_settings_str.split("|")
 			for provider_tmp in providers_tmp:
 				provider_config = ProviderConfig(provider_tmp)
 				provider_key = provider_config.getProvider()
@@ -434,14 +443,14 @@ class AutoBouquetsMaker(Screen):
 		self.locktimer.start(100, 1)
 
 	def doScan(self):
-		if not self.manager.read(self.selectedProviders[self.currentAction]):
+		if not self.manager.read(self.selectedProviders[self.currentAction], self.providers):
 			print>>log, "[AutoBouquetsMaker] Cannot read data"
 			self.showError(_('Cannot read data'))
 			return
 		self.doActions()
 
 	def doBuildIndex(self):
-		self.manager.save()
+		self.manager.save(self.providers, self.dependents)
 		self.scanComplete()
 
 	def scanComplete(self):
@@ -474,7 +483,7 @@ class AutoBouquetsMaker(Screen):
 				if sat[0] == orb_pos:
 					return True
 		return False
-			
+
 	def printconfig(self):
 		print "[ABM-config] level: ",config.autobouquetsmaker.level.value
 		print "[ABM-config] providers: ",config.autobouquetsmaker.providers.value
@@ -493,13 +502,20 @@ class AutoBouquetsMaker(Screen):
 		print "[ABM-config] show non-indexed: ",config.autobouquetsmaker.showextraservices.value
 		if config.autobouquetsmaker.FTA_only.value:
 			print "[ABM-config] FTA_only: ",config.autobouquetsmaker.FTA_only.value
-		if config.autobouquetsmaker.no_rescan.value:
-			print "[ABM-config] no_rescan: ",config.autobouquetsmaker.no_rescan.value
 		print "[ABM-config] schedule: ",config.autobouquetsmaker.schedule.value
 		if config.autobouquetsmaker.schedule.value:
 			print "[ABM-config] schedule time: ",config.autobouquetsmaker.scheduletime.value
 			print "[ABM-config] schedule repeat: ",config.autobouquetsmaker.repeattype.value
-			
+
+	def getABMsettings(self):
+		providers_extra = []
+		providers_tmp = config.autobouquetsmaker.providers.value.split("|")
+		for provider_str in providers_tmp:
+			provider = provider_str.split(":", 1)[0]
+			if provider in self.dependents:
+				for descendent in self.dependents[provider]:
+					providers_extra.append('|' + descendent + ':' + provider_str.split(":", 1)[1])
+		return config.autobouquetsmaker.providers.value + ''.join(providers_extra)
 
 	def about(self):
 		self.session.open(MessageBox,"AutoBouquetsMaker\nVersion date - 21/10/2012\n\nCoded by:\n\nSkaman and AndyBlac",MessageBox.TYPE_INFO)
@@ -655,4 +671,3 @@ class AutoAutoBouquetsMakerTimer:
 			autobouquetsmakertext = strftime(_("%a %e %b  %-H:%M"), t)
 		else:
 			autobouquetsmakertext = ""
-		

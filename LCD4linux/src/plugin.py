@@ -1,6 +1,6 @@
-﻿# -*- coding: utf-8 -*-#
+# -*- coding: utf-8 -*-#
 #
-# LCD4linux - Pearl DPF LCD Display, Samsung SPF-Line, Grautec-TFT, WLAN-LCDs, internes LCD über Skin
+# LCD4linux - Pearl DPF LCD Display, Samsung SPF-Line, Grautec-TFT, WLAN-LCDs, internes LCD uber Skin
 #
 # written by joergm6 @ IHAD
 # (Meteo-Station @ compilator)
@@ -14,7 +14,7 @@
 #  Advertise with this Plugin is not allowed.
 #  For other uses, permission from the author is necessary.
 #
-Version = "V4.5-r2"
+Version = "V4.7-r2"
 from __init__ import _
 from enigma import eConsoleAppContainer, eActionMap, iServiceInformation, iFrontendInformation, eDVBResourceManager, eDVBVolumecontrol
 from enigma import getDesktop, getEnigmaVersionString
@@ -51,6 +51,9 @@ import simplejson
 import calendar
 import math
 import gc
+import os
+import re
+import unicodedata
 
 url2 = False
 try:
@@ -2479,6 +2482,7 @@ def find_dev2(idVendor, idProduct, idVendor2, idProduct2):
 	L4log("Vendor=%04x ProdID=%04x or Vendor=%04x ProdID=%04x" % (idVendor,idProduct,idVendor2,idProduct2), gefunden)
 	return gefunden
 
+
 # get picon path
 def getpiconres(x, y, full, picon, P2, P2A, P2C):
 	if len(P2C) < 3:
@@ -2542,6 +2546,7 @@ def getpiconres(x, y, full, picon, P2, P2A, P2C):
 			except:
 				L4log("Error: create Picon-Cache-Dir")
 		return ""
+
 
 def isOffTime(b,e,bw,ew):
 	t=localtime()
@@ -9046,15 +9051,18 @@ def LCD4linuxPIC(self,session):
 					if (i<4 and ConfigType in ["1","2","5"]) or (i<5 and ConfigType in ["11","21","51"]) or (i<2 and ConfigType in ["12","22"]):
 						i+=1
 						High = curr.get("High","0")
+						High = curr.get("High","0")
 						Low = curr.get("Low","0")
 						Day = curr.get("Day","")
 						Icon = curr.get("Icon","0")
 						Cond = curr.get("Cond","")
 						Regen = curr.get("Regen","0")
-						if "." in Regen:
-							Regen += "mm" if LCD4linux.WetterRain.value == "true2" else ""
-						else:
-							Regen += "%" if LCD4linux.WetterRain.value == "true2" else ""
+					
+						if not Regen=="":
+							if "." in Regen:
+								Regen += "mm" if LCD4linux.WetterRain.value == "true2" else ""
+							else:
+								Regen += "%" if LCD4linux.WetterRain.value == "true2" else ""
 						if ConfigType[0] == "5":
 							font = ImageFont.truetype(ConfigFont,int(14*Wmulti), encoding='unic')
 							fontD = ImageFont.truetype(ConfigFont,int(14*Wmulti), encoding='unic')
@@ -9108,12 +9116,13 @@ def LCD4linuxPIC(self,session):
 								font = ImageFont.truetype(ConfigFont,int(int(LCD4linux.WetterRainZoom.value)*Wmulti/10.0), encoding='unic')
 								w,h = self.draw[Wim].textsize(Regen, font=font)
 								RColor = LCD4linux.WetterRainColor.value
-								if "." in Regen:
-									if float(Regen.replace("m",""))*10 >= int(LCD4linux.WetterRainColor2use.value):
-										RColor = LCD4linux.WetterRainColor2.value
-								else:
-									if int(Regen.replace("%","")) >= int(LCD4linux.WetterRainColor2use.value):
-										RColor = LCD4linux.WetterRainColor2.value
+								if not Regen=="":
+									if "." in Regen:
+										if float(Regen.replace("m",""))*10 >= int(LCD4linux.WetterRainColor2use.value):
+											RColor = LCD4linux.WetterRainColor2.value
+									else:
+										if int(Regen.replace("%","")) >= int(LCD4linux.WetterRainColor2use.value):
+											RColor = LCD4linux.WetterRainColor2.value
 								ShadowText(Wim,MAX_W-w, POSY, Regen, font, RColor, ConfigShadow)
 						else:
 							Leer,h = self.draw[Wim].textsize(" ", font=font)
@@ -9135,12 +9144,13 @@ def LCD4linuxPIC(self,session):
 								font = ImageFont.truetype(ConfigFont,int(int(LCD4linux.WetterRainZoom.value)*Wmulti/10.0), encoding='unic')
 								w,h = self.draw[Wim].textsize(Regen, font=font)
 								RColor = LCD4linux.WetterRainColor.value
-								if "." in Regen:
-									if float(Regen.replace("m",""))*10 >= int(LCD4linux.WetterRainColor2use.value):
-										RColor = LCD4linux.WetterRainColor2.value
-								else:
-									if int(Regen.replace("%","")) >= int(LCD4linux.WetterRainColor2use.value):
-										RColor = LCD4linux.WetterRainColor2.value
+								if not Regen=="":
+									if "." in Regen:
+										if float(Regen.replace("m",""))*10 >= int(LCD4linux.WetterRainColor2use.value):
+											RColor = LCD4linux.WetterRainColor2.value
+									else:
+										if int(Regen.replace("%","")) >= int(LCD4linux.WetterRainColor2use.value):
+											RColor = LCD4linux.WetterRainColor2.value
 								ShadowText(Wim,POSX+int(54*Wmulti)-w-2, POSY+Dayh-int(h/2), Regen, font, RColor, ConfigShadow)
 							if LCD4linux.WetterLine.value == "true":
 								self.draw[Wim].line((POSX,1,POSX,POSY+int(60*Wmulti)),fill=ConfigColor)
@@ -9185,6 +9195,8 @@ def LCD4linuxPIC(self,session):
 				Feel = self.WDay[ConfigWWW].get("Feel","")
 				if self.WetterOK==False:
 					Wtime = self.WDay[ConfigWWW].get("Wtime","00:00")
+				Feel = re.sub('[^0-9]', '',Feel);
+				L4logE("feel is:",Feel);
 				if Feel=="" or abs(int(Feel or "0")-int(Temp_c[:-1] or "0")) < int(LCD4linux.WetterExtraFeel.value) or LCD4linux.WetterExtra.value == False:
 					Feel = ""
 				else:
@@ -9932,6 +9944,7 @@ def LCD4linuxPIC(self,session):
 			if pos != -1:
 				rr = rr[:pos]
 			picon = str(rr.rstrip(":").replace(":", "_")) + ".png"
+			
 			if Picon2 == False:
 				P2 = LCD4linux.PiconPath.value
 				P2A = LCD4linux.PiconPathAlt.value
@@ -9942,16 +9955,44 @@ def LCD4linuxPIC(self,session):
 				P2A = LCD4linux.Picon2PathAlt.value
 				P2C = LCD4linux.Picon2Cache.value
 				Puse = 1
+			
 			ret=""
 			if len(P2C)>2:
 				useCache = True
 				ret=getpiconres(ConfigSize, MAX_H, ConfigFullScreen, picon, P2, P2A, P2C)
+				if ret == "":
+					name = str(""+self.Lchannel_name)
+					name = unicodedata.normalize('NFKD', unicode(name, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+					name = re.sub('[^a-z0-9]', '', name.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
+					name= name +".png"
+					ret=getpiconres(ConfigSize, MAX_H, ConfigFullScreen, name, P2, P2A, P2C)
+
 			else:
 				useCache = False
 				PIC = []
+				
+				#
+				# SNAME ADditions
+				# Determine the SNAME Picon file then 
+				# add this to the picon file list for checking/loading
+				#
+				name = str(""+self.Lchannel_name)
+				name = unicodedata.normalize('NFKD', unicode(name, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+				name = re.sub('[^a-z0-9]', '', name.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
+				name= name +".png"
+				
+				L4logE("SNAME Picon: ",str(""+os.path.join(P2,name)));
+				
+				PIC.append(os.path.join(P2,name))
+				if len(P2A) > 3:
+					PIC.append(os.path.join(P2A,name))
+				
 				PIC.append(os.path.join(P2,picon))
 				if len(P2A) > 3:
 					PIC.append(os.path.join(P2A,picon))
+				#
+				# End of SNAME additions
+				#
 				fields = picon.split("_", 3)
 				if len(fields) > 2 and fields[2] not in ["1","2"]:
 					fields[2] = "1"
@@ -13080,4 +13121,9 @@ def Plugins(**kwargs):
 	description="LCD4Linux", 
 	where = PluginDescriptor.WHERE_MENU,
 	fnc = setup))
+	list.append(PluginDescriptor(name = _("LCD4Linux"),
+	description = _("LCD4Linux"),
+	where = PluginDescriptor.WHERE_PLUGINMENU,
+	fnc = main,
+	icon = "plugin.png"))
 	return list
