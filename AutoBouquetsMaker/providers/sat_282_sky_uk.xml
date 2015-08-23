@@ -235,7 +235,9 @@
 		<channel number="413" with="427" /><!-- BT Sport 1 HD -->
 		<channel number="414" with="433" /><!-- BT Sport EurHD -->
 		<channel number="417" with="457" /><!-- BT Sport 2 HD -->
+		<channel number="424" with="460" /><!-- Setanta HD -->		
 		<channel number="426" with="458" /><!-- BTSpt/ESPN HD -->
+		<channel number="428" with="462" /><!-- Premier HD -->		
 		<channel number="437" with="490" /><!-- BoxNation HD -->
 		<channel number="501" with="516" /><!-- Sky News HD -->
 		<channel number="512" with="518" /><!-- RT HD -->
@@ -269,6 +271,8 @@ except:
 		"Setanta Ireland": 423,
 		"Setanta Sports1": 424,
 		"Premier Sports": 428,
+		"Setanta HD": 460,
+		"Premier HD": 462,		
 		"Oireachtas TV": 574,
 		"RTEjr": 635
 	}
@@ -276,6 +280,7 @@ except:
 	ITVs = {
 		1020: "ITV Border Scotland",
 		3527: "STV Edinburgh",
+		4012: "UTV Ireland",
 		4055: "STV HD",
 		5070: "STV Glasgow",
 		6000: "ITV London",
@@ -308,17 +313,21 @@ except:
 		6355: "ITV +1 Granada",
 		6365: "ITV +1 Meridian",
 		6210: "STV Grampian",
-		6220: "STV Scottish East",
-		6371: "STV Scottish West",
+		6220: "STV Scottish West",
+		6230: "UTV",
+		6371: "STV Scottish East",
+		6500: "ITV Yorkshire West HD",
+		6501: "ITV Wales HD",
 		6502: "ITV Meridian South HD",
 		6503: "ITV Central West HD",
 		6504: "ITV London HD",
-		6505: "ITV Granada HD"
+		6505: "ITV Granada HD",
+		6510: "UTV HD"
 	}
 
 	whitelist = ['ITV HD','ITV2 HD','ITV3 HD','ITV4 HD','ITV Encore HD',752,'RTE2 HD','BoxNation HD','BT Preview HD']
-	whitelist_by_id = [3661,5032,3663,3141,3625,3629,3627,4040]
-	blacklist = [899,950,998,999,'Sky Intro'] # block Sky intro
+	whitelist_by_id = [3661,5032,3663,3141,3625,3629,3627,4040,5152,5153,5154]
+	blacklist = []
 
 if service["transport_stream_id"] == 0x7e3:
 	service["namespace"] = 0x11a2f26
