@@ -710,6 +710,9 @@ class DvbScanner():
 
 			service["orbital_position"] = service["namespace"] / (16**4)
 
+			if service["service_type"] < 17 and (service["service_name"][-2:] == 'HD' or ' HD ' in service["service_name"]):
+				service["service_type"] = 25
+
 			if key in tmp_services_dict:
 				tmp_services_dict[key]["numbers"].append(service["number"])
 			else:
@@ -1262,7 +1265,7 @@ class DvbScanner():
 			sort_list = []
 			i = 0
 			for service in extras:
-				if service["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES and (allow_encrypted or service["free_ca"] == 0):
+				if (service["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES or service["service_type"] in DvbScanner.INTERACTIVE_ALLOWED_TYPES) and (allow_encrypted or service["free_ca"] == 0):
 					# sort flat, alphabetic before numbers
 					sort_list.append((i, re.sub('^(?![a-z])', 'zzzzz', service['service_name'].lower())))
 				i += 1
