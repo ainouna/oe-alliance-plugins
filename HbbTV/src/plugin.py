@@ -117,10 +117,10 @@ def setChannelInfo(sid, onid, tsid, name, orgid):
 	__gval__.channel_info_tsid  = tsid
 	__gval__.channel_info_name  = name
 	__gval__.channel_info_orgid = orgid
-	print "Set Channel Info >> sid : %X, onid : %X, tsid : %X, name : %s, orgid : %d " % (sid, onid, tsid, name, orgid)
+	print "[HBBTV] Set Channel Info >> sid : %X, onid : %X, tsid : %X, name : %s, orgid : %d " % (sid, onid, tsid, name, orgid)
 def getChannelInfos():
 	global __gval__
-	print "Get Channel Info >> sid : %X, onid : %X, tsid : %X, name : %s, orgid : %d " % (__gval__.channel_info_sid,
+	print "[HBBTV] Get Channel Info >> sid : %X, onid : %X, tsid : %X, name : %s, orgid : %d " % (__gval__.channel_info_sid,
 		__gval__.channel_info_onid, __gval__.channel_info_tsid, __gval__.channel_info_name, __gval__.channel_info_orgid)
 	return (__gval__.channel_info_sid,
 		__gval__.channel_info_onid,
@@ -130,12 +130,12 @@ def getChannelInfos():
 
 def isNeedRestart():
 	global __gval__
-	print "Need Restart(GET) : ", __gval__.need_restart
+	print "[HBBTV] Need Restart(GET) : ", __gval__.need_restart
 	return __gval__.need_restart
 def setNeedRestart(n):
 	global __gval__
 	__gval__.need_restart = n
-	print "Need Restart(SET) : ", __gval__.need_restart
+	print "[HBBTV] Need Restart(SET) : ", __gval__.need_restart
 
 def getCommandUtil():
 	global __gval__
@@ -321,7 +321,7 @@ class StreamServer:
 				conn, addr = self._socket.accept()
 				self._client(conn, addr)
 			except Exception, ErrMsg:
-				print "ServerSocket Error >>", ErrMsg
+				print "[HBBTV] ServerSocket Error >>", ErrMsg
 				pass
 
 		while not self._terminated:
@@ -352,7 +352,7 @@ class ServerFactory:
 			try:
 				if os.path.exists(name):
 					os.unlink(name)
-					print "Removed ", name
+					print "[HBBTV] Removed ", name
 			except: pass
 		destroy(name)
 
@@ -368,11 +368,11 @@ class ServerFactory:
 		return streamServer
 
 	def doListenInetTCP(self, ip, port, handler):
-		print "Not implemented yet!!"
+		print "[HBBTV] Not implemented yet!!"
 	def doListenUnixDGRAM(self, name, handler):
-		print "Not implemented yet!!"
+		print "[HBBTV] Not implemented yet!!"
 	def doListenInetDGRAM(self, ip, port, handler):
-		print "Not implemented yet!!"
+		print "[HBBTV] Not implemented yet!!"
 
 class Handler:
 	def doUnpack(self, data):
@@ -386,7 +386,7 @@ class Handler:
 		return _pack(opcode, params)
 
 	def printError(self, reason):
-		print reason
+		print "[HBBTV]", reason
 
 class BrowserCommandUtil(OpCodeSet):
 	def __init__(self):
@@ -400,15 +400,15 @@ class BrowserCommandUtil(OpCodeSet):
 
 	def doConnect(self, filename):
 		if not os.path.exists(filename):
-			print "File not exists :", filename
+			print "[HBBTV] File does not exist:", filename
 			return False
 		try:
 			self._fd = os.open(filename, os.O_WRONLY|os.O_NONBLOCK)
 			if self._fd is None:
-				print "Fail to open file :", filename
+				print "[HBBTV] Failed to open file:", filename
 				return False
 		except Exception, ErrMsg:
-			print ErrMsg
+			print "[HBBTV] ", ErrMsg
 			self._fd = None
 			return False
 		return True
@@ -421,7 +421,7 @@ class BrowserCommandUtil(OpCodeSet):
 
 	def doSend(self, command, params=None, reserved=0):
 		if self._fd is None:
-			print "No found pipe!!"
+			print "[HBBTV] pipe not found"
 			return False
 		data = ''
 		try:
@@ -429,7 +429,7 @@ class BrowserCommandUtil(OpCodeSet):
 			if data is None:
 				return False
 			os.write(self._fd, data)
-			print "Send OK!! :", command
+			print "[HBBTV] Send OK!! :", command
 		except: return False
 		return True
 
@@ -486,12 +486,12 @@ class HandlerHbbTV(Handler):
 		self._videobackend_activate = False
 
 	def _handle_dump(self, handle, opcode, data=None):
-		if True: return
-		print str(handle)
+		# if True: return
+		print "[HBBTV]", str(handle)
 		try:
-			print "    - opcode : ", self.opcode.what(opcode)
+			print "[HBBTV]     - opcode : ", self.opcode.what(opcode)
 		except: pass
-		print "    - data   : ", data
+		print "[HBBTV]     - data   : ", data
 
 	def doHandle(self, data, onCloseCB, onSetPageTitleCB):
 		opcode, params, reserved = None, None, 0
@@ -500,7 +500,7 @@ class HandlerHbbTV(Handler):
 		try:
 			datas  = self.doUnpack(data)
 		except Exception, ErrMsg:
-			print "Unpacking packet ERR :", ErrMsg
+			print "[HBBTV] Unpacking packet ERR :", ErrMsg
 			params = 'fail to unpack packet!!'
 			opcode = self.opcode.get("OP_UNKNOWN")
 			return self.doPack(opcode, params)
@@ -510,10 +510,10 @@ class HandlerHbbTV(Handler):
 		self.opcode.what(opcode)
 
 		try:
-			#print self.handle_map[opcode]
+			print "[HBBTV]", self.handle_map[opcode]
 			(reserved, params) = self.handle_map[opcode](opcode, params)
 		except Exception, ErrMsg:
-			print "Handling packet ERR :", ErrMsg
+			print "[HBBTV] Handling packet ERR :", ErrMsg
 			params = 'fail to handle packet!!'
 			opcode = self.opcode.get("OP_UNKNOWN")
 			return self.doPack(opcode, params)
@@ -795,14 +795,14 @@ class HandlerHbbTV(Handler):
 		for ii in range(5):
 			self._vod_service = None
 			try:
-				#print "Try to open vod [%d] : %s" % (ii, url)
-				print "Try to open vod"
+				print "[HBBTV] Try to open vod [%d] : %s" % (ii, url)
+				#print "Try to open vod"
 				self._vod_service = eServiceReference(4097, 0, url)
 				self._session.nav.playService(self._vod_service)
 				if self._vod_service is not None:
 					return True
 			except Exception, ErrMsg:
-				print "OpenVOD ERR :", ErrMsg
+				print "[HBBTV] OpenVOD ERR :", ErrMsg
 			time.sleep(1)
 		return False
 
@@ -829,7 +829,7 @@ class HandlerHbbTV(Handler):
 			elif pauseFlag == 'P':
 				servicePause.pause()
 		except Exception, ErrMsg:
-			print "onPause ERR :", ErrMsg
+			print "[HBBTV] onPause ERR :", ErrMsg
 		return (0, "OK")
 
 from libshm import SimpleSharedMemory
@@ -897,10 +897,10 @@ class HbbTVWindow(Screen):
 			self._vod_length = length
 			if position == -1 and length == -1:
 				raise Exception("Can't get play status")
-			#print position, "/", length, " - ", getTimeString(position), "/", getTimeString(length)
+			print "[HBBTV] ", position, "/", length, " - ", getTimeString(position), "/", getTimeString(length)
 			self._ssm.setStatus(position, length, 1)
 		except Exception, ErrMsg:
-			print ErrMsg
+			print "[HBBTV] ", ErrMsg
 			self._serviceEOF()
 
 	def _serviceStarted(self):
@@ -908,12 +908,12 @@ class HbbTVWindow(Screen):
 			self._ssm.setStatus(0, 0, 0)
 			self._currentServicePositionTimer.start(1000)
 		except Exception, ErrMsg:
-			print ErrMsg
+			print "[HBBTV] ", ErrMsg
 
 	def _serviceEOF(self):
 		(position,length) = self.getVodPlayTime()
 		self._ssm.setStatus(length, length, 1)
-		print "service EOF"
+		print "[HBBTV] service EOF"
 		self._currentServicePositionTimer.stop()
 
 	def _layoutFinished(self):
@@ -957,7 +957,7 @@ class HbbTVWindow(Screen):
 		self.close()
 
 	def _cb_set_page_title(self, title=None):
-		print "page title :",title
+		print "[HBBTV] page title :",title
 		if title is None:
 			return
 		self.setTitle(title)
@@ -1045,7 +1045,7 @@ class HbbTVHelper(Screen):
 			if reader.doOpen(info, self.mVuplusBox):
 				reader.doParseApplications()
 				reader.doDump()
-			else:	print "no data!!"
+			else:	print "[HBBTV] no data!!"
 
 			try:
 				self._applicationList = reader.getApplicationList()
@@ -1071,11 +1071,11 @@ class HbbTVHelper(Screen):
 		if url is None:
 			url = tmp_url
 		if strIsEmpty(url):
-			print "can't get url of hbbtv!!"
+			print "[HBBTV] can't get url of hbbtv!!"
 			return
-		print "success to get url of hbbtv!! >>", url
+		print "[HBBTV] success to get url of hbbtv!! >>", url
 		if self._excuted_browser:
-			print "already excuted opera browser!!"
+			print "[HBBTV] already excuted opera browser!!"
 			return
 
 		if isNeedRestart():
@@ -1139,11 +1139,11 @@ class HbbTVHelper(Screen):
 		self._session.openWithCallback(self._application_selected, ChoiceBox, title=_("Please choose an HbbTV application."), list=applications)
 
 	def _application_selected(self, selected):
-		print selected
+		print "[HBBTV]", selected
 		try:
 			if selected[1] is None: return
 			self._cb_hbbtv_activated(selected[1]["name"], selected[1]["url"])
-		except Exception, ErrMsg: print ErrMsg
+		except Exception, ErrMsg: print "[HBBTV]", ErrMsg
 
 	def showBrowserConfigBox(self, callback=None):
 		start_stop_mode = []
@@ -1165,7 +1165,7 @@ class HbbTVHelper(Screen):
 					self._start_opera()
 			elif mode == 'Stop':
 				self._stop_opera()
-		except Exception, ErrMsg: print "Config ERR :", ErrMsg
+		except Exception, ErrMsg: print "[HBBTV] Config ERR :", ErrMsg
 
 	def _is_browser_running(self):
 		try:
@@ -1173,7 +1173,7 @@ class HbbTVHelper(Screen):
 			ret = os.popen('%s/launcher check'%(HBBTVAPP_PATH)).read()
 			return ret.strip() != "0"
 		except Exception, ErrMsg:
-			print "Check Browser Running ERR :", ErrMsg
+			print "[HBBTV] Check Browser Running ERR :", ErrMsg
 		return False
 
 	def doChangeChannel(self, _sid, _tsid):
@@ -1394,7 +1394,7 @@ class BookmarkEditWindow(ConfigListScreen, Screen):
 		self.mBookmarkManager = _bm
 
 		if _data is not None:
-			print _data.mId
+			print "[HBBTV]", _data.mId
 
 		Screen.__init__(self, session)
 
@@ -1757,10 +1757,10 @@ class BrowserHelpWindow(Screen, HelpableScreen):
 
 		elif _mode == self.MODE_MOUSE:
 			self["DirectionActions"] = HelpableActionMap(self, "DirectionActions", {
-				"up"    : (self.keyPass, _("It will move the mouse pointer up.")),
-				"down"  : (self.keyPass, _("It will move the mouse pointer down.")),
-				"left"  : (self.keyPass, _("It will move the mouse pointer left.")),
-				"right" : (self.keyPass, _("It will move the mouse pointer right.")),
+				"up"    : (self.keyPass, _("Move the mouse pointer up.")),
+				"down"  : (self.keyPass, _("Move the mouse pointer down.")),
+				"left"  : (self.keyPass, _("Move the mouse pointer left.")),
+				"right" : (self.keyPass, _("Move the mouse pointer right.")),
 			})
 			self["OkCancelActions"] = HelpableActionMap(self, "OkCancelActions", {
 				"ok" : (self.keyPass, _("Left Mouse Button")),
@@ -2005,7 +2005,7 @@ class OperaBrowser(Screen):
 			self.keyLeft()
 
 	def _on_setPageTitle(self, title=None):
-		print "Title :",title
+		print "[HBBTV] Title :", title
 		if title is None:
 			return
 		self.setTitle(title)
@@ -2014,7 +2014,7 @@ class OperaBrowser(Screen):
 		global _g_helper
 		if not _g_helper._is_browser_running():
 			return
-		print "Inputed Url :", data, mode
+		print "[HBBTV] Inputed Url :", data, mode
 		if strIsEmpty(data):
 			return
 		#self.hideSubmenu()
@@ -2108,7 +2108,7 @@ class OperaBrowser(Screen):
 	def doCommand(self, command):
 		try:
 			self.COMMAND_MAP[command]()
-		except Exception, ErrMsg: print ErrMsg
+		except Exception, ErrMsg: print "[HBBTV]", ErrMsg
 
 	def keyOK(self):
 		if not self.toggleMainScreenFlag:
@@ -2217,7 +2217,7 @@ class OperaBrowser(Screen):
 			if idx > 10: idx = 10
 			title = url[:idx]
 		self._currentPageTitle = title
-		print self._currentPageUrl
+		print "[HBBTV]", self._currentPageUrl
 		self.toggleMainScreen()
 		self.hideSubmenu()
 		self.keyDown()

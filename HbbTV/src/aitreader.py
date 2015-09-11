@@ -47,7 +47,7 @@ class eAITSectionReader:
 			item["orgid"]   = int(self.__item(application, "orgid"))
 			item["appid"]   = int(self.__item(application, "appid"))
 			item["profile"] = int(self.__item(application, "profile"))
-		#print item
+		print "[HBBTV] __application", item
 		return item
 
 	def doParseApplications(self):
@@ -75,34 +75,37 @@ class eAITSectionReader:
 		document = ""
 		try:	document = os.popen(self.mCommand).read()
 		except Exception, ErrMsg:
-			print ErrMsg
+			print "[HBBTV] doOpen err:", ErrMsg
 			return False
 		if len(document) == 0:
 			return False
-		document = re.sub(RE_XML_ILLEGAL, "?", document)
-		document = re.sub("&", "+", document)
-		document = document.decode("cp1252").encode("utf-8")
-		document = "<URL>" + document + "</URL>"
-		#print document
-		self.mDocument = xml.dom.minidom.parseString(document)
-		return True
+		try:
+			document = re.sub(RE_XML_ILLEGAL, "?", document)
+			document = re.sub("&", "+", document)
+			document = document.decode("cp1252").encode("utf-8")
+			document = "<URL>" + document + "</URL>"
+			print "[HBBTV] doOpen", document
+			self.mDocument = xml.dom.minidom.parseString(document)
+			return True
+		except Exception as ex:
+			print "[aitreader]", str(ex)
+			return False
 
 	def doDump(self):
 		for x in self.getApplicationList():
-			print "Name  :", x["name"]
-			print "URL   :", x["url"]
-			print "OrgID :", x["orgid"]
-			print "AppID :", x["appid"]
-			print "Control Code :", x["control"]
-			print "Profile Code :", x["profile"]
-			print ""
+			print "[HBBTV] Name  :", x["name"]
+			print "[HBBTV] URL   :", x["url"]
+			print "[HBBTV] OrgID :", x["orgid"]
+			print "[HBBTV] AppID :", x["appid"]
+			print "[HBBTV] Control Code :", x["control"]
+			print "[HBBTV] Profile Code :", x["profile"]
+			print "[HBBTV]"
 
 def unit_test(demux, pmtid, sid):
 	reader = eAITSectionReader(demux, pmtid, sid)
 	if reader.doOpen():
 		reader.doParseApplications()
 		reader.doDump()
-	else:	print "no data!!"
+	else:	print "[HBBTV] no data!!"
 
 #unit_test('0', 0x17d4, 0x2b66)
-

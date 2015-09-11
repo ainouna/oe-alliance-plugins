@@ -6,7 +6,7 @@ class BookmarkData:
 		self.mParent 	= _parent
 		self.mType	= _type
 	def dump(self, _intent='  '):
-		print "%s-> %d, %s, %s, %d, %d" % (_intent, self.mId, self.mTitle, self.mUrl, self.mParent, self.mType)
+		print "[HBBTV] %s-> %d, %s, %s, %d, %d" % (_intent, self.mId, self.mTitle, self.mUrl, self.mParent, self.mType)
 
 class CategoryData:
 	def __init__(self, _id, _name):
@@ -21,7 +21,7 @@ class CategoryData:
 		self.mBookmarks[_bookmark.mId] = _bookmark
 
 	def dump(self):
-		print "  -> %d, %s" % (self.mId, self.mName)
+		print "[HBBTV]   -> %d, %s" % (self.mId, self.mName)
 		for key in self.mBookmarks.iterkeys():
 			self.mBookmarks[key].dump('      ')
 
@@ -38,7 +38,7 @@ class SimpleConfigParser:
 	def _read(self):
 		if self.mDataValid:
 			return
-		print "populate!!"
+		print "[HBBTV] populate!!"
 		self.mConfig.read(self.mFileName)
 
 		self.mCategoryCurrentIdx = self.getNumber('__SYS__', 'category_current_idx')
@@ -52,7 +52,7 @@ class SimpleConfigParser:
 		self.mPopulateValid = False
 
 	def _del(self, _section, _option=None):
-		#print _section, ' :', _option
+		print "[HBBTV] _del", _section, ' :', _option
 		if _option is None:
 			if not self.exist(_section):
 				return
@@ -66,7 +66,7 @@ class SimpleConfigParser:
 		try:
 			data = self.mConfig.get(_section, _option)
 		except Exception, e:
-			#print e
+			print "[HBBTV] _get err:", e
 			return _default
 		else :	return data
 
@@ -172,8 +172,9 @@ class BookmarkManager(SimpleConfigParser):
 		if not self.mDebugEnable:
 			return
 		if params is None:
-			print format
-		else:	print format % (params)
+			print "[HBBTV] message:", format
+		else:
+			print "[HBBTV] message:", format % (params)
 
 	def getBookmark(self, _title):
 		self.populate()
@@ -299,10 +300,10 @@ class BookmarkManager(SimpleConfigParser):
 		if not self.mDebugEnable:
 			return
 		self.populate()
-		print "-- snapshot --"
+		print "[HBBTV] -- snapshot --"
 		for key in self.mBookmarkRoot.iterkeys():
 			self.mBookmarkRoot[key].dump()
-		print "--------------"
+		print "[HBBTV] --------------"
 
 	@staticmethod
 	def getInstance():
