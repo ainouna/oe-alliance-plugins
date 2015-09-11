@@ -18,6 +18,10 @@ if DAGS4
 SUBDIRS += TransCodingSetup
 endif
 
+if DAGS7356
+SUBDIRS += TransCodingSetup
+endif
+
 if DREAMBOX
 SUBDIRS +=  DMBlindscan
 endif
@@ -99,6 +103,10 @@ SUBDIRS += F3LEDControl
 endif
 
 if VG5000
+SUBDIRS += F3LEDControl
+endif
+
+if S7300S
 SUBDIRS += F3LEDControl
 endif
 

@@ -177,6 +177,7 @@
 		<section number="998">Sky Info</section>
 		<section number="1000">Sky Sports Interactive</section>
 		<section number="1020">Sky Anytime</section>
+		<section number="1030">BT Sports Interactive</section>
 		<section number="1050">Not indexed</section>
 	</sections>
 	<!-- channelsontop affect only HD bouquets -->
@@ -186,7 +187,7 @@
 		<channel number="142" /><!-- BBC Two HD -->
 		<channel number="178" /><!-- ITV HD -->
 		<channel number="227" /><!-- Channel 4 HD -->
-		<channel number="171" /><!-- Channel 5 HD -->
+		<channel number="105" /><!-- Channel 5 HD -->
 		<channel number="106" /><!-- Sky 1 HD -->
 		<channel number="107" /><!-- Sky Living HD -->
 		<channel number="108" /><!-- Sky Atlantic HD -->
@@ -235,7 +236,9 @@
 		<channel number="413" with="427" /><!-- BT Sport 1 HD -->
 		<channel number="414" with="433" /><!-- BT Sport EurHD -->
 		<channel number="417" with="457" /><!-- BT Sport 2 HD -->
+		<channel number="424" with="460" /><!-- Setanta HD -->		
 		<channel number="426" with="458" /><!-- BTSpt/ESPN HD -->
+		<channel number="428" with="462" /><!-- Premier HD -->		
 		<channel number="437" with="490" /><!-- BoxNation HD -->
 		<channel number="501" with="516" /><!-- Sky News HD -->
 		<channel number="512" with="518" /><!-- RT HD -->
@@ -269,13 +272,21 @@ except:
 		"Setanta Ireland": 423,
 		"Setanta Sports1": 424,
 		"Premier Sports": 428,
+		"Setanta HD": 460,
+		"Premier HD": 462,		
 		"Oireachtas TV": 574,
 		"RTEjr": 635
 	}
 
-	ITVs = {
+	channels_to_add_by_id = {
+		
+	}
+
+	rename = {
+		# ITV regions
 		1020: "ITV Border Scotland",
 		3527: "STV Edinburgh",
+		4012: "UTV Ireland",
 		4055: "STV HD",
 		5070: "STV Glasgow",
 		6000: "ITV London",
@@ -308,28 +319,48 @@ except:
 		6355: "ITV +1 Granada",
 		6365: "ITV +1 Meridian",
 		6210: "STV Grampian",
-		6220: "STV Scottish East",
-		6371: "STV Scottish West",
+		6220: "STV Scottish West",
+		6230: "UTV",
+		6371: "STV Scottish East",
+		6500: "ITV Yorkshire West HD",
+		6501: "ITV Wales HD",
 		6502: "ITV Meridian South HD",
 		6503: "ITV Central West HD",
 		6504: "ITV London HD",
-		6505: "ITV Granada HD"
+		6505: "ITV Granada HD",
+		6510: "UTV HD",
+		
+		# BT Interactive
+		5381: "BT Sport Mosaic Extra",
+		5382: "BT Sport Extra 2",
+		5383: "BT Sport Extra 3",
+		5384: "BT Sport Extra 4",
+		5385: "BT Sport Extra 5",
+		5386: "BT Sport Extra 6"
 	}
 
 	whitelist = ['ITV HD','ITV2 HD','ITV3 HD','ITV4 HD','ITV Encore HD',752,'RTE2 HD','BoxNation HD','BT Preview HD']
-	whitelist_by_id = [3661,5032,3663,3141,3625,3629,3627,4040]
-	blacklist = [899,950,998,999,'Sky Intro'] # block Sky intro
+	whitelist_by_id = [3141,3625,3627,3629,3622,3623,3661,3663,4040,5032,5152,5153,5154,5662,5663]
+	blacklist = []
+	bt_sports_id = [5030,5381,5031,5382,5383,5384,5385,5386]
 
 if service["transport_stream_id"] == 0x7e3:
 	service["namespace"] = 0x11a2f26
 
-if "channel_id" in service and service["channel_id"] in ITVs: # sort out ITV channel names
-	service["interactive_name"] = ITVs[service["channel_id"]]
-
+if "channel_id" in service and service["channel_id"] in rename: # sort out ITV channel names
+	service["interactive_name"] = rename[service["channel_id"]]
+	
+# Add channels by name
 if custom and service["service_name"] in channels_to_add and service["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES and channels_to_add[service["service_name"]] not in LCNs_in_use:
 	LCNs_in_use.append(channels_to_add[service["service_name"]])
 	service["number"] = channels_to_add[service["service_name"]]
 	service["numbers"] = [channels_to_add[service["service_name"]]]
+
+# Add channels by ID
+if custom and service["channel_id"] in channels_to_add_by_id and service["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES and channels_to_add_by_id[service["channel_id"]] not in LCNs_in_use:
+	LCNs_in_use.append(channels_to_add_by_id[service["channel_id"]])
+	service["number"] = channels_to_add_by_id[service["channel_id"]]
+	service["numbers"] = [channels_to_add_by_id[service["channel_id"]]]
 
 if service["service_type"] == 0x02 and service["number"] > 3000:
 	service["number"] -= 3000
@@ -357,7 +388,7 @@ for number in service["numbers"]:
 				new_numbers.append(service["channel_id"] - 1072)
 				service["interactive_name"] = "BBC RB " + str(service["channel_id"] - 2052)
 			else:
-				print "BBC interactive service?", service
+				pass
 			#	free_slot_found = False
 			#	for i in range(987, 996):
 			#		if i in LCNs_in_use:
@@ -373,8 +404,17 @@ for number in service["numbers"]:
 		elif service["channel_id"] > 4093 and service["channel_id"] < 4099: # Sky Anytime
 			new_numbers.append(service["channel_id"] - 3074)
 			service["interactive_name"] = "Sky Anytime " + str(service["channel_id"])
+		elif service["channel_id"] in bt_sports_id:
+			new_numbers.append(1030 + bt_sports_id.index(service["channel_id"]))
 		else:
-			skip = True
+			if extraservices:
+				i = 1450
+				while i > 1049 and i not in LCNs_in_use:
+					i -= 1
+				LCNs_in_use.append(i+1)
+				new_numbers.append(i+1)
+			else:
+				skip = True
 		break
 	elif service["service_name"] in ('Sky Intro') and number < 998: # Sky Intro
 		skip = True

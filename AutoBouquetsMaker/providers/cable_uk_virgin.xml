@@ -101,8 +101,8 @@
 	</dvbcconfigs>
 	<sections>
 		<section number="100">Entertainment</section>
-		<section number="206">Factual</section>
-		<section number="260">Lifestyle</section>
+		<section number="245">Factual</section>
+		<section number="278">Lifestyle</section>
 		<section number="300">Music</section>
 		<section number="400">Movies</section>
 		<section number="500">Sports</section>
@@ -116,6 +116,7 @@
 		<section number="990">BBC Interactive</section>
 		<section number="998">Information</section>
 		<section number="1000">Red button</section>
+		<section number="1020">BT Sport Interactive</section>
 	</sections>
 	<!-- channelsontop affect only HD bouquets -->
 	<hdchannelsontop>
@@ -155,17 +156,11 @@
 		 <channel number="410" with="440" /><!-- Sky Drama Rom HD -->
 		 <channel number="411" with="441" /><!-- Sky SciFi Hor HD -->
 		 <channel number="412" with="442" /><!-- Sky Select HD -->
-		 <channel number="501" with="511" /><!-- Sky Sports News HQ -->
-		 <channel number="502" with="512" /><!-- Sky Sports 1 -->
-		 <channel number="503" with="513" /><!-- Sky Sports 2HD -->
-		 <channel number="504" with="514" /><!-- Sky Sports 3 -->
-		 <channel number="505" with="515" /><!-- Sky Sports 4 -->
-		 <channel number="506" with="516" /><!-- Sky Sports 5 -->
-		 <channel number="507" with="517" /><!-- Sky Sports F1 -->
 	</swapchannels>	
 	<servicehacks>
 <![CDATA[
 blacklist = ['M Pack Tier 1','More TV Pack Tier 2','M+ Pack Tier 3','L Pack Tier 4','XL Pack Tier 5'] # channel names have quotes. Channel numbers do not. Example: ['ITV HD', 250, 500]
+bt_sports_xtra = ["BT Sport Extra 1","BT Sport Extra 2","BT Sport Extra 3","BT Sport Extra 4","BT Sport Extra 5","BT Sport Extra 6"]
 
 for number in service["numbers"]:
 	if number in blacklist:
@@ -177,6 +172,9 @@ for number in service["numbers"]:
 	elif number == 43:
 		service["numbers"] = [number + 957]
 		break
+	elif number < 100 and service["service_name"] in bt_sports_xtra:
+		service["numbers"] = [1020 + bt_sports_xtra.index(service["service_name"])]
+		break
 		
 if service["service_name"] in blacklist:
 	skip = True
@@ -185,7 +183,8 @@ if service["service_name"].startswith("DL_") or service["service_name"].startswi
 	skip = True
 	
 if service["service_name"].startswith("SptsETV"):
-	service["free_ca"] = 1		
+	service["free_ca"] = 1
+	
 ]]>
 	</servicehacks>
 </provider>

@@ -2,6 +2,7 @@ from .. import log
 import os, codecs, re
 import xml.dom.minidom
 from Components.config import config
+from dvbscanner import DvbScanner
 
 class Tools():
 	def parseXML(self, filename):
@@ -119,7 +120,7 @@ class Tools():
 		sort_list = sorted(sort_list, key=lambda listItem: listItem[1])
 		return [i[0] for i in sort_list]
 
-	def customMix(self, services, section_identifier, sections):
+	def customMix(self, services, section_identifier, sections, providerConfig):
 		custom_dir = os.path.dirname(__file__) + "/../custom"
 		customfile = custom_dir + "/" + section_identifier + "_CustomMix.xml"
 		customised = {"video":{}, "radio":{}}
@@ -252,7 +253,7 @@ class Tools():
 	def favourites(self, path, services, providers, providerConfigs, bouquetsOrder):
 		custom_dir = os.path.dirname(__file__) + "/../custom"
 		provider_key = "favourites"
-		customized = {"video":{}, "radio":{}}
+		customised = {"video":{}, "radio":{}}
 		name = ""
 		prefix = ""
 		sections = {}
@@ -308,7 +309,7 @@ class Tools():
 								elif node2.attributes.item(i).name == "target":
 									target = int(node2.attributes.item(i).value)
 							if provider and source and target and provider in services and source in services[provider]["video"]:
-								customized["video"][target] = services[provider]["video"][source]
+								customised["video"][target] = services[provider]["video"][source]
 
 				elif node.tagName == "bouquets":
 					for node2 in node.childNodes:
@@ -337,7 +338,7 @@ class Tools():
 			if len(hacks) > 0:
 				exec(hacks)
 
-			if len(customized["video"]) > 0:
+			if len(customised["video"]) > 0:
 				providers[provider_key] = {}
 				providers[provider_key]["name"] = name
 				providers[provider_key]["bouquets"] = area_key
@@ -348,7 +349,7 @@ class Tools():
 				providers[provider_key]["sections"] = sections
 				if config.autobouquetsmaker.addprefix.value:
 					prefix = name
-				services[provider_key] = customized
+				services[provider_key] = customised
 				bouquetsOrder.insert(placement, provider_key)
 
 				from providerconfig import ProviderConfig
@@ -370,7 +371,7 @@ class Tools():
 
 		active_sections = {}
 		for key in services[servicetype].keys():
-			if (("FTA" not in bouquettype or services[servicetype][key]["free_ca"] == 0) and ("HD" not in bouquettype or services[servicetype][key]["service_type"] >= 17)) or 'ALL' in bouquettype:
+			if (("FTA" not in bouquettype or services[servicetype][key]["free_ca"] == 0) and ("HD" not in bouquettype or (services[servicetype][key]["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES and services[servicetype][key]["service_type"] >= 17))) or 'ALL' in bouquettype:
 				section_number = max((x for x in sections if int(x) <= key))
 				if section_number not in active_sections:
 					active_sections[section_number] = sections[section_number]
