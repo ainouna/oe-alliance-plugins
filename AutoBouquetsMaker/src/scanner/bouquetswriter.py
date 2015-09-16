@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# for localized messages
+from .. import _
+
 from .. import log
 from Components.config import config
 from tools import Tools

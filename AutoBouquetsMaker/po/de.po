@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: enigma2-oe-alliance-plugins 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-10 20:25+0100\n"
-"PO-Revision-Date: 2015-09-11 14:10+0100\n"
+"POT-Creation-Date: 2015-09-12 19:57+0100\n"
+"PO-Revision-Date: 2015-09-13 19:21+0100\n"
 "Last-Translator: Ralf Biedermann <ralf.biedermann@rbsoft.de>\n"
 "Language-Team: Andy Blacburn, Trial\n"
 "Language: de\n"
@@ -18,6 +18,9 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 1.5.4\n"
 
+msgid "%a %e %b  %-H:%M"
+msgstr ""
+
 msgid "30 Days"
 msgstr "30 Tage"
 
@@ -26,6 +29,9 @@ msgstr "Über"
 
 msgid "Add provider prefix to bouquets"
 msgstr "Füge Provider in Namen ein"
+
+msgid "All channels"
+msgstr "Alle Sender"
 
 msgid "Allows you to set a schedule to perform a scan "
 msgstr "Erlaubt es einen Zeitplan für den Scan zu erstellen"
@@ -57,11 +63,32 @@ msgstr "AutoBouquetsMaker Suche"
 msgid "Bottom"
 msgstr "Ende"
 
+msgid "Bouquets generation..."
+msgstr "Erzeuge Favoritenliste..."
+
 msgid "Bouquets order"
 msgstr "Favoritenliste Sortierung"
 
 msgid "Cancel"
 msgstr "Abbruch"
+
+msgid "Cannot allocate the demuxer"
+msgstr "Kann Demuxer nicht belegen"
+
+msgid "Cannot free NIM because a recording is in progress"
+msgstr "Kann Tuner nicht belegen da Aufnahme läuft"
+
+msgid "Cannot get frontend"
+msgstr "Kann Tuner nicht belegen"
+
+msgid "Cannot get the NIM"
+msgstr "Kann Tuner nicht belegen"
+
+msgid "Cannot read data"
+msgstr "Kann Daten nicht lesen"
+
+msgid "Cannot retrieve Resource Manager instance"
+msgstr ""
 
 msgid ""
 "Choose which level of setting's to display. 'Expert'-level shows all items, "
@@ -82,8 +109,23 @@ msgstr "Täglich"
 msgid "Delete bouquets"
 msgstr "Lösche Favoriten"
 
+msgid "Done"
+msgstr "Fertig"
+
+msgid "Enough Retries, delaying till next schedule."
+msgstr "Zuviele Versuche, verschiebe auf nächsten Termin."
+
+msgid "FTA Channels"
+msgstr "FTA Sender"
+
+msgid "FTA HD Channels"
+msgstr "FTA HD Sender"
+
 msgid "FTA only"
 msgstr "Nur FTA"
+
+msgid "HD Channels"
+msgstr "HD Sender"
 
 msgid "Hide sections"
 msgstr "Verstecke Sektionen"
@@ -107,17 +149,32 @@ msgstr "Alle nicht ABM Favoritenlisten behalten"
 msgid "Keep bouquets"
 msgstr "Favoritenlisten behalten"
 
+msgid "Loading bouquets..."
+msgstr "Lade Favoritenlisten..."
+
 msgid "Move down"
 msgstr "Runter bewegen"
 
 msgid "Move up"
 msgstr "Hoch bewegen"
 
+msgid "No NIMs found"
+msgstr "Keine Tuner gefunden"
+
+msgid "No area found"
+msgstr "Kein Ort gefunden"
+
+msgid "No valid NIM found"
+msgstr "Kein gültiger Tuner gefunden"
+
 msgid "OK"
 msgstr "OK"
 
 msgid "Place bouquets at"
 msgstr "Platziere Favoriten"
+
+msgid "Please first setup, in configuration"
+msgstr "Bitte zuerst in Konfiguration einstellen"
 
 msgid "Please wait..."
 msgstr "Bitte warten..."
@@ -127,6 +184,13 @@ msgstr "Anbieter"
 
 msgid "Providers order"
 msgstr "Anbieter Sortierung"
+
+msgid "Radio Channels"
+msgstr "Radio Sender"
+
+#, python-format
+msgid "Reading %s..."
+msgstr "Lese %s..."
 
 msgid "Really close without saving settings?"
 msgstr "Wirklich ohne Speichern beenden?"
@@ -143,6 +207,13 @@ msgid ""
 msgstr ""
 "Wähle deine eigene Favoritenliste aus der Liste. Bitte beachten das nur die "
 "ersten 100 Sender der Favoritenliste benutzt werden."
+
+#, python-format
+msgid "Services: %d video - %d radio"
+msgstr "Sender: %d Video - %d Radio"
+
+msgid "Services: 0 video - 0 radio"
+msgstr "Sender: 0 Video - 0 Radio"
 
 msgid "Set the repeat interval of the schedule."
 msgstr "Setze den Zeitabstand für die geplanten Scans."
@@ -164,6 +235,9 @@ msgstr "Überspringe nicht konfigurierte Satelliten"
 
 msgid "Start scan"
 msgstr "Starte Scan"
+
+msgid "Starting scanner"
+msgstr "Starte Suche"
 
 msgid ""
 "This affects all bouquets. Select 'no' to scan in all services. Select 'yes' "
@@ -240,8 +314,15 @@ msgstr ""
 msgid "Time of scan to start"
 msgstr "Zeit für Sendersuche"
 
+msgid "Timeout for tuner lock"
+msgstr "Timeout für Frequenzeinstellung"
+
 msgid "Top"
 msgstr "Anfang"
+
+#, python-format
+msgid "Tuning %s..."
+msgstr ""
 
 msgid "Weekly"
 msgstr "Wöchentlich"
@@ -264,6 +345,13 @@ msgstr ""
 
 msgid "When enable allow you start a scan from the extensions list."
 msgstr "Wenn aktiviert kann eine Suche aus der Pluginliste gestartet werden."
+
+msgid ""
+"Your bouquets are about to be updated,\n"
+"Do you want to allow this?"
+msgstr ""
+"Deine Favoritenlisten sollen jetzt aktualisiert werden.\n"
+"Willst Du es erlauben?"
 
 msgid "area"
 msgstr "Region"
