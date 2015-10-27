@@ -9,23 +9,31 @@ from Components.ActionMap import ActionMap
 from Components.ConfigList import ConfigList
 from Components.config import config, configfile, ConfigSubsection, getConfigListEntry, ConfigSelection
 from Components.ConfigList import ConfigListScreen
-from enigma import iPlayableService, eServiceCenter, eTimer, eActionMap
+from enigma import iPlayableService, eServiceCenter, eTimer, eActionMap, eDBoxLCD
 from Components.ServiceEventTracker import ServiceEventTracker
 from Components.ServiceList import ServiceList
 from Screens.InfoBar import InfoBar
 from time import localtime, time
 from Tools.Directories import fileExists
+import Components.RecordingConfig
 
-from boxbranding import getBoxType
+from boxbranding import getImageDistro, getBoxType
 
 import Screens.Standby
 
 config.plugins.VFD_ini = ConfigSubsection()
 config.plugins.VFD_ini.showClock = ConfigSelection(default = "True_Switch", choices = [("False",_("Channelnumber in Standby off")),("True",_("Channelnumber in Standby Clock")), ("True_Switch",_("Channelnumber/Clock in Standby Clock")),("True_All",_("Clock always")),("Off",_("Always off"))])
 config.plugins.VFD_ini.timeMode = ConfigSelection(default = "24h", choices = [("12h"),("24h")])
+config.plugins.VFD_ini.recDisplay = ConfigSelection(default = "False", choices = [("True",_("yes")),("False",_("no"))])
+config.plugins.VFD_ini.recClockBlink = ConfigSelection(default = "off", choices = [("off",_("Off")),("on_off",_("On/Off")),("brightness",_("Brightness level"))])
+
+MyRecLed = False
 
 def vfd_write(text):
-	open("/dev/dbox/lcd0", "w").write(text)
+	try:
+		open("/dev/dbox/lcd0", "w").write(text)
+	except:
+		pass
 
 class Channelnumber:
 
@@ -34,6 +42,7 @@ class Channelnumber:
 		self.sign = 0
 		self.updatetime = 10000
 		self.blink = False
+		self.blinkCounter = 0
 		self.channelnrdelay = 15
 		self.begin = int(time())
 		self.endkeypress = True
@@ -49,6 +58,7 @@ class Channelnumber:
 			})
 
 	def __eventInfoChanged(self):
+		self.RecordingLed()
 		if config.plugins.VFD_ini.showClock.value == 'Off' or config.plugins.VFD_ini.showClock.value == 'True_All':
 			return
 		service = self.session.nav.getCurrentService()
@@ -63,7 +73,10 @@ class Channelnumber:
 			vfd_write(chnr)
 		else:
 			Channelnr = "%04d" % (int(chnr))
-			vfd_write(Channelnr)
+			if config.plugins.VFD_ini.recDisplay.value == 'True' and MyRecLed:
+				vfd_write(" rec")
+			else:
+				vfd_write(Channelnr)
 
 	def getchannelnr(self):
 		if InfoBar.instance is None:
@@ -93,6 +106,20 @@ class Channelnumber:
 		return chnr
 
 	def prikaz(self):
+		self.RecordingLed()
+		if config.plugins.VFD_ini.recClockBlink.value != "off" and MyRecLed and config.plugins.VFD_ini.recDisplay.value == 'False':
+			self.blinkCounter += 1
+			if self.blinkCounter >= 2:
+				self.blinkCounter = 0
+				if self.blink:
+					if config.plugins.VFD_ini.recClockBlink.value == "brightness":
+						eDBoxLCD.getInstance().setLCDBrightness(config.lcd.bright.value * 255 / 10)
+					self.blink = False
+				else:
+					if config.plugins.VFD_ini.recClockBlink.value == "brightness":
+						eDBoxLCD.getInstance().setLCDBrightness(config.lcd.bright.value * 255 / 10 / 2 )
+					self.blink = True
+
 		if config.plugins.VFD_ini.showClock.value == 'True' or config.plugins.VFD_ini.showClock.value == 'True_All' or config.plugins.VFD_ini.showClock.value == 'True_Switch':
 			clock = str(localtime()[3])
 			clock1 = str(localtime()[4])
@@ -107,9 +134,14 @@ class Channelnumber:
 				clock2 = "%02d%02d" % (int(clock), int(clock1))
 				self.sign = 0
 
-			vfd_write(clock2)
+			if config.plugins.VFD_ini.recDisplay.value == 'True' and MyRecLed:
+				vfd_write(" rec")
+			elif config.plugins.VFD_ini.recClockBlink.value == 'on_off' and self.blink:
+				vfd_write("    ")
+			else:
+				vfd_write(clock2)
 		else:
-			vfd_write("....")
+			vfd_write("    ")
 
 	def vrime(self):
 		if (config.plugins.VFD_ini.showClock.value == 'True' or config.plugins.VFD_ini.showClock.value == 'False' or config.plugins.VFD_ini.showClock.value == 'True_Switch') and not Screens.Standby.inStandby:
@@ -124,7 +156,7 @@ class Channelnumber:
 				self.__eventInfoChanged()
 					
 		if config.plugins.VFD_ini.showClock.value == 'Off':
-			vfd_write("....")
+			vfd_write("    ")
 			self.zaPrik.start(self.updatetime, 1)
 			return
 		else:
@@ -137,28 +169,43 @@ class Channelnumber:
 		self.begin = time() + int(self.channelnrdelay)
 		self.endkeypress = True
 
+	def RecordingLed(self):
+		global MyRecLed
+		try:
+			#not all images support recording type indicators
+			recordings = self.session.nav.getRecordings(False,Components.RecordingConfig.recType(config.recording.show_rec_symbol_for_rec_types.getValue()))
+		except:
+			recordings = self.session.nav.getRecordings()
+		if recordings:
+			MyRecLed = True
+		else:
+			MyRecLed = False
+			if self.blink:
+				eDBoxLCD.getInstance().setLCDBrightness(config.lcd.bright.value * 255 / 10)
+				self.blink = False
+			
 ChannelnumberInstance = None
 
 def leaveStandby():
-	print "[F3 LED] Leave Standby"
+	print "[Stb LED] Leave Standby"
 
 	if config.plugins.VFD_ini.showClock.value == 'Off':
-		vfd_write("....")
+		vfd_write("    ")
 
 def standbyCounterChanged(configElement):
-	print "[F3 LED] In Standby"
+	print "[Stb LED] In Standby"
 
 	from Screens.Standby import inStandby
 	inStandby.onClose.append(leaveStandby)
 
 	if config.plugins.VFD_ini.showClock.value == 'Off':
-		vfd_write("....")
+		vfd_write("    ")
 
 def initVFD():
-	print "[F3 LED] initVFD"
+	print "[Stb LED] initVFD"
 
 	if config.plugins.VFD_ini.showClock.value == 'Off':
-		vfd_write("....")
+		vfd_write("    ")
 
 class VFD_INISetup(ConfigListScreen, Screen):
 	def __init__(self, session, args = None):
@@ -173,9 +220,11 @@ class VFD_INISetup(ConfigListScreen, Screen):
 			</screen>"""
 
 		Screen.__init__(self, session)
+		self.setTitle(_("LED Display Setup"))
 		self.onClose.append(self.abort)
 
 		self.onChangedEntry = [ ]
+			
 		self.list = []
 		ConfigListScreen.__init__(self, self.list, session = self.session, on_change = self.changedEntry)
 
@@ -200,6 +249,9 @@ class VFD_INISetup(ConfigListScreen, Screen):
 		self.list.append(getConfigListEntry(_("Show on LED"), config.plugins.VFD_ini.showClock))
 		if config.plugins.VFD_ini.showClock.value != "Off":
 			self.list.append(getConfigListEntry(_("Time mode"), config.plugins.VFD_ini.timeMode))
+			self.list.append(getConfigListEntry(_("Show REC-Symbol in Display"), config.plugins.VFD_ini.recDisplay))
+			if config.plugins.VFD_ini.recDisplay.value == "False":
+				self.list.append(getConfigListEntry(_("Show blinking Clock on Display during recording"), config.plugins.VFD_ini.recClockBlink))
 
 		self["config"].list = self.list
 		self["config"].l.setList(self.list)
@@ -211,7 +263,9 @@ class VFD_INISetup(ConfigListScreen, Screen):
 
 	def newConfig(self):
 		print self["config"].getCurrent()[0]
-		if self["config"].getCurrent()[0] == _('Show on VFD'):
+		if self["config"].getCurrent()[0] == _('Show on LED'):
+			self.createSetup()
+		elif self["config"].getCurrent()[0] == _('Show REC-Symbol in Display'):
 			self.createSetup()
 
 	def abort(self):
@@ -237,7 +291,7 @@ class VFD_INISetup(ConfigListScreen, Screen):
 
 class VFD_INI:
 	def __init__(self, session):
-		print "[F3 LED] initializing"
+		print "[Stb LED] initializing"
 		self.session = session
 		self.service = None
 		self.onClose = [ ]
@@ -254,13 +308,20 @@ class VFD_INI:
 		self.abort()
 
 	def abort(self):
-		print "[F3 LED] aborting"
+		print "[Stb LED] aborting"
 		config.misc.standbyCounter.addNotifier(standbyCounterChanged, initial_call = False)
 
 def main(menuid):
-	if menuid != "system":
-		return [ ]
-	return [(_("LED Display Setup"), startVFD, "VFD_INI", None)]
+		if getImageDistro() in ("openatv"):
+			if menuid == "display":
+				return [(_("LED Display Setup"), startVFD, "VFD_INI", None)]
+			else:
+				return[ ]
+		else:
+			if menuid != "system":
+				return [ ]
+			else:
+				return [(_("LED Display Setup"), startVFD, "VFD_INI", None)]
 
 def startVFD(session, **kwargs):
 	session.open(VFD_INISetup)
@@ -275,15 +336,15 @@ def controliniVfd():
 	global mySession
 
 	if gReason == 0 and mySession != None and iniVfd == None:
-		print "[F3 LED] Starting !!"
+		print "[Stb LED] Starting !!"
 		iniVfd = VFD_INI(mySession)
 	elif gReason == 1 and iniVfd != None:
-		print "[F3 LED] Stopping !!"
+		print "[Stb LED] Stopping !!"
 
 		iniVfd = None
 
 def sessionstart(reason, **kwargs):
-	print "[F3 LED] sessionstart"
+	print "[Stb LED] sessionstart"
 	global iniVfd
 	global gReason
 	global mySession

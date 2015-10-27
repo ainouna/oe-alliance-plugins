@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# for localized messages
+from . import _
+
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Components.config import getConfigListEntry, config, configfile
@@ -46,7 +50,7 @@ class AutoBouquetsMaker_HideSections(Screen):
 
 		self["list"] = List(self.drawList)
 		self["key_red"] = Button(_("Cancel"))
-		self["key_green"] = Button("Save")
+		self["key_green"] = Button(_("Save"))
 		self["actions"] = ActionMap(["OkCancelActions", "ColorActions"],
 				{
 					"red": self.keyCancel,
