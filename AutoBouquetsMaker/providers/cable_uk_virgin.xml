@@ -2,7 +2,6 @@
 <name>Virgin (UK)</name>
 	<streamtype>dvbc</streamtype>
 	<protocol>vmuk</protocol>
-	<namespace>0xffff0000</namespace>
 	<dvbcconfigs>
 		<configuration key="hd_00001_dvbc_uk" netid="00001" bouquettype="hd" frequency="643000" symbol_rate="6887000" system="0" fec_inner="3" inversion="2" modulation="3">00001 West Yorkshire</configuration>
 		<configuration key="hd_00002_dvbc_uk" netid="00002" bouquettype="hd" frequency="643000" symbol_rate="6887000" system="0" fec_inner="3" inversion="2" modulation="3">00002 Glasgow</configuration>
@@ -161,6 +160,9 @@
 <![CDATA[
 blacklist = ['M Pack Tier 1','More TV Pack Tier 2','M+ Pack Tier 3','L Pack Tier 4','XL Pack Tier 5'] # channel names have quotes. Channel numbers do not. Example: ['ITV HD', 250, 500]
 bt_sports_xtra = ["BT Sport Extra 1","BT Sport Extra 2","BT Sport Extra 3","BT Sport Extra 4","BT Sport Extra 5","BT Sport Extra 6"]
+
+if service["service_type"] == 1 and service["service_group_id"] in(17,21):
+	service["service_type"] = 25
 
 for number in service["numbers"]:
 	if number in blacklist:
