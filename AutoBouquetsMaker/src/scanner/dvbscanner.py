@@ -27,6 +27,8 @@ class DvbScanner():
 		self.bat_table_id = 0x4a
 		self.fastscan_pid = 0x00
 		self.fastscan_table_id = 0x00
+		self.ignore_visible_service_flag = 0
+		self.extra_debug = config.autobouquetsmaker.level.value == "expert" and config.autobouquetsmaker.extra_debug.value
 
 	def isValidOnidTsid(self, orbital_position, onid, tsid):
 		if onid == 0x00 or onid == 0x1111:
@@ -113,6 +115,10 @@ class DvbScanner():
 	def setFastscanTableId(self, value):
 		self.fastscan_table_id = value
 		print>>log, "[DvbScanner] Fastscan table id: 0x%x" % self.fastscan_table_id
+
+	def setVisibleServiceFlagIgnore(self, value):
+		self.ignore_visible_service_flag = value
+		print>>log, "[DvbScanner] Ignore visible service flag: %d" % self.ignore_visible_service_flag
 
 	def buildNamespace(self, transponder):
 		orbital_position = transponder['orbital_position']
@@ -235,6 +241,8 @@ class DvbScanner():
 		self.namespace_dict = {}
 
 		for transponder in nit_content:
+			if self.extra_debug:
+				print "NIT content", transponder
 			if "descriptor_tag" in transponder and transponder["descriptor_tag"] == 0x41: # service
 				key = "%x:%x:%x" % (transponder["transport_stream_id"], transponder["original_network_id"], transponder["service_id"])
 				service_dict_tmp[key] = transponder
@@ -341,6 +349,9 @@ class DvbScanner():
 			if namespace_key not in self.namespace_dict:
 				self.namespace_dict[namespace_key] = transponder["namespace"]
 
+			if self.extra_debug:
+				print "transponder", transponder
+
 		if read_other_section:
 			print>>log, "[DvbScanner] Added/Updated %d transponders with network_id = 0x%x and network_id = 0x%x" % (transponders_count, nit_current_section_network_id, nit_other_section_network_id)
 		else:
@@ -361,6 +372,10 @@ class DvbScanner():
 		else:
 			for id in logical_channel_number_dict_tmp:
 				logical_channel_number_dict[id] = logical_channel_number_dict_tmp[id]
+
+		if self.extra_debug:
+			for key in logical_channel_number_dict:
+				print "LCN entry", key, logical_channel_number_dict[key]
 
 		return {
 			"transport_stream_id_list": transport_stream_id_list,
@@ -395,6 +410,9 @@ class DvbScanner():
 				time.sleep(0.1)	# no data.. so we wait a bit
 				continue
 
+			if self.extra_debug:
+				print "BAT section", section
+
 			if section["header"]["table_id"] == self.bat_table_id:
 				if section["header"]["bouquet_id"] != bouquet_id:
 					continue
@@ -416,13 +434,33 @@ class DvbScanner():
 
 		logical_channel_number_dict = {}
 
+		if self.extra_debug:
+			lcn_list = []
+			sid_list = []
+			tsid_list = []
+
 		for service in bat_content:
 			if service["descriptor_tag"] != descriptor_tag:
 				continue
+
+			if self.extra_debug:
+				sid_list.append(service["service_id"])
+				lcn_list.append(service["logical_channel_number"])
+				if service["transport_stream_id"] not in tsid_list:
+					tsid_list.append(service["transport_stream_id"])
+
 			key = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
 			if 'logical_channel_number' not in service: # use SID when output doesn't have LCN
 				service["logical_channel_number"] = service["service_id"]
+			if self.extra_debug:
+				print "LCN entry", key, service
+
 			logical_channel_number_dict[key] = service
+
+		if self.extra_debug:
+			print "TSID list from BAT", sorted(tsid_list)
+			print "SID list from BAT", sorted(sid_list)
+			print "LCN list from BAT", sorted(lcn_list)
 
 		return logical_channel_number_dict
 
@@ -488,37 +526,41 @@ class DvbScanner():
 		# Create logical_channel_number_dict for VMUK
 		if protocol == 'vmuk':
 			for key in sdt_secions_status:
-				for section in sdt_secions_status[key]["content"]:
-					if "logical_channel_number" in section and section["logical_channel_number"] > 0:
-						servicekey = "%x:%x:%x" % (section["transport_stream_id"], section["original_network_id"], section["service_id"])
-						logical_channel_number_dict[servicekey] = {"transport_stream_id": section["transport_stream_id"], "original_network_id": section["original_network_id"], "service_id": section["service_id"], "logical_channel_number": section["logical_channel_number"]}
+				for service in sdt_secions_status[key]["content"]:
+					if "logical_channel_number" in service and service["logical_channel_number"] > 0:
+						servicekey = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
+						logical_channel_number_dict[servicekey] = {"transport_stream_id": service["transport_stream_id"], "original_network_id": service["original_network_id"], "service_id": service["service_id"], "logical_channel_number": service["logical_channel_number"]}
 
 		# When no LCN available, create fake LCN numbers (service-id) and use customlcn file for final channel numbers
 		if len(logical_channel_number_dict) == 0:
-			print>>log, "[DvbScanner] LCN protocol but no LCNs found in NIT. Falling back to service ID."
-			lcn_temp = {}
+			print>>log, "[DvbScanner] No LCNs found. Falling back to service ID."
 			for key in sdt_secions_status:
-				for section_content in sdt_secions_status[key]["content"]:
-					service = section_content
-					key = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
-					lcn_temp[key] = service
-			for key in lcn_temp:
-				if lcn_temp[key]["service_type"] in DvbScanner.VIDEO_ALLOWED_TYPES or lcn_temp[key]["service_type"] in DvbScanner.AUDIO_ALLOWED_TYPES or lcn_temp[key]["service_type"] in DvbScanner.INTERACTIVE_ALLOWED_TYPES:
-					lcn_temp[key]["logical_channel_number"] = lcn_temp[key]["service_id"]
-					lcn_temp[key]["visible_service_flag"] = 1
-				else:
-					lcn_temp[key]["visible_service_flag"] = 0
-			logical_channel_number_dict = lcn_temp
+				for service in sdt_secions_status[key]["content"]:
+					servicekey = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
+					logical_channel_number_dict[servicekey] = {"transport_stream_id": service["transport_stream_id"], "original_network_id": service["original_network_id"], "service_id": service["service_id"], "logical_channel_number": service["service_id"]}
 
 		service_count = 0
 		tmp_services_dict = {}
+
+		if self.extra_debug:
+			sid_list = []
+			tsid_list = []
+
 		for key in sdt_secions_status:
-			for section in sdt_secions_status[key]["content"]:
-				service = section
+			for service in sdt_secions_status[key]["content"]:
 
 				servicekey = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
 
-				if logical_channel_number_dict and (servicekey not in logical_channel_number_dict or "visible_service_flag" in logical_channel_number_dict[servicekey] and logical_channel_number_dict[servicekey]["visible_service_flag"] == 0):
+				if self.extra_debug:
+					print "SDT service", service
+					if servicekey not in logical_channel_number_dict:
+						print "Above service not in LCN dict"
+
+					sid_list.append(service["service_id"])
+					if service["transport_stream_id"] not in tsid_list:
+						tsid_list.append(service["transport_stream_id"])
+
+				if servicekey not in logical_channel_number_dict or not self.ignore_visible_service_flag and "visible_service_flag" in logical_channel_number_dict[servicekey] and logical_channel_number_dict[servicekey]["visible_service_flag"] == 0:
 					continue
 				if service_dict_tmp and servicekey not in service_dict_tmp and protocol not in ("lcn2", "lcnbat2"):
 					continue
@@ -540,6 +582,11 @@ class DvbScanner():
 
 				service_count += 1
 
+
+		if self.extra_debug:
+			print "TSID list from SDT", sorted(tsid_list)
+			print "SID list from SDT", sorted(sid_list)
+
 		print>>log, "[DvbScanner] Read %d services" % service_count
 
 		video_services = {}
@@ -549,6 +596,9 @@ class DvbScanner():
 
 		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
+
+			if self.extra_debug:
+				print "Service", service
 
 			if len(servicehacks) > 0:
 				skip = False
@@ -568,7 +618,7 @@ class DvbScanner():
 				for number in service["numbers"]:
 					if number not in video_services:
 						video_services[number] = service
-			else:
+			elif service["service_type"] in DvbScanner.AUDIO_ALLOWED_TYPES:
 				for number in service["numbers"]:
 					if number not in radio_services:
 						radio_services[number] = service
@@ -637,15 +687,14 @@ class DvbScanner():
 
 		service_count = 0
 		tmp_services_dict = {}
-		for section in fastscan_content:
-			service = section
+		for service in fastscan_content:
 
-			key = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
+			servicekey = "%x:%x:%x" % (service["transport_stream_id"], service["original_network_id"], service["service_id"])
 
-			if key not in logical_channel_number_dict:
+			if servicekey not in logical_channel_number_dict:
 				continue
 
-			if logical_channel_number_dict[key]["visible_service_flag"] == 0:
+			if logical_channel_number_dict[servicekey]["visible_service_flag"] == 0:
 				continue
 
 			if not hasattr(service, "free_ca"):
@@ -659,18 +708,18 @@ class DvbScanner():
 			if not hasattr(service, "flags"):
 				service["flags"] = 0
 
-			service["number"] = logical_channel_number_dict[key]["logical_channel_number"]
+			service["number"] = logical_channel_number_dict[servicekey]["logical_channel_number"]
 
 			service["orbital_position"] = service["namespace"] / (16**4)
 
 			if service["service_type"] < 17 and (service["service_name"][-2:] == 'HD' or ' HD ' in service["service_name"]):
 				service["service_type"] = 25
 
-			if key in tmp_services_dict:
-				tmp_services_dict[key]["numbers"].append(service["number"])
+			if servicekey in tmp_services_dict:
+				tmp_services_dict[servicekey]["numbers"].append(service["number"])
 			else:
 				service["numbers"] = [service["number"]]
-				tmp_services_dict[key] = service
+				tmp_services_dict[servicekey] = service
 
 			service_count += 1
 
@@ -687,6 +736,9 @@ class DvbScanner():
 
 			if config.autobouquetsmaker.skipservices.value and service["orbital_position"] not in orbitals_configured:
 				continue
+
+			if self.extra_debug:
+				print "Service", service
 
 			if len(servicehacks) > 0:
 				skip = False
@@ -708,7 +760,7 @@ class DvbScanner():
 				for number in service["numbers"]:
 					if number not in video_services:
 						video_services[number] = service
-			else:
+			elif service["service_type"] in DvbScanner.AUDIO_ALLOWED_TYPES:
 				for number in service["numbers"]:
 					if number not in radio_services:
 						radio_services[number] = service
@@ -912,6 +964,9 @@ class DvbScanner():
 		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
 
+			if self.extra_debug:
+				print "Service", service
+
 			if len(servicehacks) > 0:
 				skip = False
 				exec(servicehacks)
@@ -933,7 +988,7 @@ class DvbScanner():
 							video_services[number] = service
 					else:
 						video_services[number] = service
-			else:
+			elif service["service_type"] in DvbScanner.AUDIO_ALLOWED_TYPES:
 				for number in service["numbers"]:
 					if number not in radio_services:
 						radio_services[number] = service
@@ -1169,6 +1224,9 @@ class DvbScanner():
 
 		for key in self.LCN_order(tmp_services_dict):
 			service = tmp_services_dict[key]
+
+			if self.extra_debug:
+				print "Service", service
 
 			if len(servicehacks) > 0:
 				skip = False

@@ -34,7 +34,6 @@ AC_DEFINE_UNQUOTED(ARCH,"$ARCH",[box arch])
 
 AM_CONDITIONAL(SH4, test `echo "$ARCH" | cut -b 1-3` == "sh4")
 AM_CONDITIONAL(MIPSEL, test `echo "$ARCH" | cut -b 1-6` == "mipsel")
-AM_CONDITIONAL(ARM, test `echo "$ARCH" | cut -b 1-3` == "arm")
 
 AC_ARG_WITH(boxtype,
 	[  --with-boxtype=NAME box type [[none,dm7025,dm800...]]],
@@ -111,6 +110,7 @@ AM_CONDITIONAL(INIHDX, test "$BOXTYPE" == "inihdx")
 AM_CONDITIONAL(IXUSSZERO, test "$BOXTYPE" == "ixusszero")
 AM_CONDITIONAL(IXUSSONE, test "$BOXTYPE" == "ixussone")
 AM_CONDITIONAL(HD2400, test "$BOXTYPE" == "hd2400")
+AM_CONDITIONAL(HD1265, test "$BOXTYPE" == "hd1265")
 AM_CONDITIONAL(HD1200, test "$BOXTYPE" == "hd1200")
 AM_CONDITIONAL(HD1100, test "$BOXTYPE" == "hd1100")
 AM_CONDITIONAL(HD500C, test "$BOXTYPE" == "hd500c")
@@ -125,6 +125,7 @@ AM_CONDITIONAL(VUSOLO, test "$BOXTYPE" == vusolo)
 AM_CONDITIONAL(VUSOLOSE, test "$BOXTYPE" == vusolose)
 AM_CONDITIONAL(VUDUO, test "$BOXTYPE" == vuduo)
 AM_CONDITIONAL(VUSOLO2, test "$BOXTYPE" == vusolo2)
+AM_CONDITIONAL(VUSOLO4K, test "$BOXTYPE" == vusolo4k)
 AM_CONDITIONAL(VUDUO2, test "$BOXTYPE" == vuduo2)
 AM_CONDITIONAL(VUZERO, test "$BOXTYPE" == vuzero)
 AM_CONDITIONAL(XP1000, test "$BOXTYPE" == xp1000)
@@ -248,7 +249,9 @@ LCD4linux/src/data/Clock6/Makefile
 LCD4linux/src/meteo/Makefile
 LCD4linux/src/renderer/Makefile
 LCD4linux/src/wetter/Makefile
-LCD4linux/src/arm/Makefile
+LCD4linux/src/cube/Makefile
+LCD4linux/src/solo4k/Makefile
+LCD4linux/src/wetek/Makefile
 LCD4linux/src/mips/Makefile
 LCD4linux/src/sh4/Makefile
 LCD4linux/meta/Makefile
@@ -305,6 +308,10 @@ TunerServer/Makefile
 TunerServer/src/Makefile
 TunerServer/meta/Makefile
 TunerServer/po/Makefile
+
+ReZap/Makefile
+ReZap/src/Makefile
+ReZap/meta/Makefile
 
 RCUSelect/Makefile
 RCUSelect/src/Makefile

@@ -68,6 +68,7 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 	{
 		unsigned char descriptor_tag = data[offset1];
 		unsigned char descriptor_length = data[offset1 + 1];
+		int offset2 = offset1 + 2;
 		
 		if (descriptor_tag == 0xd4)
 		{
@@ -110,6 +111,31 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 						
 			PyList_Append(list, item);
 			Py_DECREF(item);
+		}
+		else if (descriptor_tag == 0x83)	// LCN descriptor (Fransat, 5W)
+		{
+			int size = descriptor_length;
+			while (size > 0)
+			{
+				int original_network_id = (data[offset2] << 8) | data[offset2 + 1];
+				int transport_stream_id = (data[offset2 + 2] << 8) | data[offset2 + 3];
+				int service_id = (data[offset2 + 4] << 8) | data[offset2 + 5];
+				int logical_channel_number = (data[offset2 + 6] << 4) | (data[offset2 + 7] >> 4);
+
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+						"bouquet_id", bouquet_id,
+						"original_network_id", original_network_id,
+						"transport_stream_id", transport_stream_id,
+						"service_id", service_id,
+						"logical_channel_number", logical_channel_number,
+						"descriptor_tag", descriptor_tag);
+							
+				PyList_Append(list, item);
+				Py_DECREF(item);
+				
+				offset2 += 8;
+				size -= 8;
+			}
 		}
 		
 		offset1 += (descriptor_length + 2);
@@ -194,7 +220,29 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 					descriptor_length -= 3;
 				}
 			}
-			else if (descriptor_tag == 0x83)	// LCN descriptor
+			else if (descriptor_tag == 0x81)	// LCN descriptor (UPC, 0.8W)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = (data[offset3 + 2] << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0x83)	// LCN descriptor (NC+, 13E)
 			{
 				while (descriptor_length > 0)
 				{
@@ -218,7 +266,29 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 					descriptor_length -= 4;
 				}
 			}
-			else if (descriptor_tag == 0x86)	// DIGI LCN descriptor
+			else if (descriptor_tag == 0x86)	// LCN descriptor (DIGI 0.8W)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = (data[offset3 + 2] << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0x93)	// LCN descriptor (NOVA, 13E)
 			{
 				while (descriptor_length > 0)
 				{
@@ -275,7 +345,7 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 					}
 				}
 			}
-			else if (descriptor_tag == 0xe2) // User defined Viasat bouquet
+			else if (descriptor_tag == 0xe2) // LCN descriptor (Viasat, 4.8E)
 			{
 				while (descriptor_length > 0)
 				{
@@ -513,7 +583,7 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 					Py_DECREF(item);
 				}
 			}
-			else if (descriptor_tag == 0x87)	// LCN V2 descriptor
+			else if (descriptor_tag == 0x87)	// LCN V2 descriptor (Canal Digital Nordic 0.8W)
 			{
 				int offset3 = offset2 + 2;
 				int channel_list_id = data[offset3];

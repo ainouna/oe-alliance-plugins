@@ -46,6 +46,10 @@ if HD1200
 SUBDIRS += F3LEDControl XtrendRemote
 endif
 
+if HD1265
+SUBDIRS += F3LEDControl XtrendRemote
+endif
+
 if HD500C
 SUBDIRS += F3LEDControl XtrendRemote
 endif
@@ -150,6 +154,10 @@ if VUZERO
 SUBDIRS += FirmwareUpgrade VuRemote Blindscan
 endif
 
+if VUSOLO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup Blindscan 
+endif
+
 if GIGABLUE
 SUBDIRS += GigaBlueVFDControl Blindscan AudioEffect
 endif
@@ -180,7 +188,7 @@ SUBDIRS += HbbTV AudioEffect
 endif
 
 if WETEK
-SUBDIRS += RCUSelect
+SUBDIRS += RCUSelect ReZap
 endif
 
 if XC7362
