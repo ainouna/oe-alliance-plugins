@@ -56,7 +56,7 @@ class BrowserSetting:
 		f.close()
 
 	def getDefault(self):
-		self._start = 'http://vuplus.com'
+		self._start = 'http://google.com'
 		self._type = 0
 		self._keymap = 'us-rc'
 
@@ -344,7 +344,7 @@ class BrowserPreferenceWindow(ConfigListScreen, Screen):
 			self._startPageUrl = d['start']
 			self._keymapType = d['keymap']
 			#d['type']
-		except: self._startPageUrl = 'http://vuplus.com'
+		except: self._startPageUrl = 'http://google.com'
 		self.updateStartPageUrl()
 
 		if self._keymapType is None or len(self._keymapType) == 0:
@@ -1018,7 +1018,8 @@ class Browser(Screen):
 			self.session.open(MessageBox, message, MessageBox.TYPE_INFO)
 			return
 		mode = 0
-		#startpage = 'http://vuplus.com'
+		# disable it when you want change default web site
+		startpage = 'http://google.com'
 		try:
 			d = BrowserSetting().getData()
 			start = d['start']
