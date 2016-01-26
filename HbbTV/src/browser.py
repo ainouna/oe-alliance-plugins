@@ -1019,7 +1019,7 @@ class Browser(Screen):
 			return
 		mode = 0
 		# disable it when you want change default web site
-		startpage = 'http://google.com'
+		#startpage = 'http://google.com'
 		try:
 			d = BrowserSetting().getData()
 			start = d['start']
