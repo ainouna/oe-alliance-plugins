@@ -85,15 +85,15 @@ class eAITSectionReader:
 			document = document.decode("cp1252").encode("utf-8")
 			document = "<URL>" + document + "</URL>"
 			print "[HBBTV] doOpen", document
-		try:
-			self.mDocument = xml.dom.minidom.parseString(document)
-		except Exception, ErrMsg:
-			vbcfg.ERR("XML parse: %s" % ErrMsg)
-			return False
-			return True
+			try:
+				self.mDocument = xml.dom.minidom.parseString(document)
+			except Exception, ErrMsg:
+				vbcfg.ERR("XML parse: %s" % ErrMsg)
+				return False
 		except Exception as ex:
 			print "[aitreader]", str(ex)
 			return False
+		return True
 
 	def doDump(self):
 		for x in self.getApplicationList():
