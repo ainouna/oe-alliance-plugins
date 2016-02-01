@@ -58,6 +58,7 @@ PyObject *ss_close(PyObject *self, PyObject *args) {
 PyObject *ss_parse_bat(unsigned char *data, int length) {
 	PyObject* list = PyList_New(0);
 	
+	int bouquet_id = (data[3] << 8) | data[4];
 	int bouquet_descriptors_length = ((data[8] & 0x0f) << 8) | data[9];
 	int transport_stream_loop_length = ((data[bouquet_descriptors_length + 10] & 0x0f) << 8) | data[bouquet_descriptors_length + 11];
 	int offset1 = 10;
@@ -67,6 +68,7 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 	{
 		unsigned char descriptor_tag = data[offset1];
 		unsigned char descriptor_length = data[offset1 + 1];
+		int offset2 = offset1 + 2;
 		
 		if (descriptor_tag == 0xd4)
 		{
@@ -91,15 +93,88 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 			PyList_Append(list, item);
 			Py_DECREF(item);
 		}
-		else if (descriptor_tag == 0x47)
+		else if (descriptor_tag == 0x47) // Bouquet name descriptor
 		{
 			char description[descriptor_length + 1];
 			memset(description, '\0', descriptor_length + 1);
 			memcpy(description, data + offset1 + 2, descriptor_length);
+			char *description_ptr = description;
+			if (strlen(description) == 0)
+				strcpy(description, "Unknown");
+			else if (description[0] == 0x05)
+				description_ptr++;
 			
-			PyObject *item = Py_BuildValue("{s:i,s:s}",
+			PyObject *item = Py_BuildValue("{s:i,s:i,s:s}",
 						"descriptor_tag", descriptor_tag,
-						"description", description);
+						"bouquet_id", bouquet_id,
+						"description", description_ptr);
+						
+			PyList_Append(list, item);
+			Py_DECREF(item);
+		}
+		else if (descriptor_tag == 0x83)	// LCN descriptor (Fransat, 5W)
+		{
+			int size = descriptor_length;
+			while (size > 0)
+			{
+				int original_network_id = (data[offset2] << 8) | data[offset2 + 1];
+				int transport_stream_id = (data[offset2 + 2] << 8) | data[offset2 + 3];
+				int service_id = (data[offset2 + 4] << 8) | data[offset2 + 5];
+				int logical_channel_number = (data[offset2 + 6] << 4) | (data[offset2 + 7] >> 4);
+
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+						"bouquet_id", bouquet_id,
+						"original_network_id", original_network_id,
+						"transport_stream_id", transport_stream_id,
+						"service_id", service_id,
+						"logical_channel_number", logical_channel_number,
+						"descriptor_tag", descriptor_tag);
+							
+				PyList_Append(list, item);
+				Py_DECREF(item);
+				
+				offset2 += 8;
+				size -= 8;
+			}
+		}
+		else  // unknown descriptors
+		{
+			char description[2 * descriptor_length + 5];
+			memset(description, '\0', 2 * descriptor_length + 5);
+			int length = descriptor_length + 2;
+			int i = 0, j = 0;
+			while (length > 0)
+			{
+				int decimalNumber = data[offset2 + i - 2];
+				int quotient, n=0, temp;
+				char hextemp[3] = {'0','0','\0'};
+				quotient = decimalNumber;
+				while(quotient!=0) 
+				{
+					temp = quotient % 16;
+					if (temp < 10)
+						temp = temp + 48; 
+					else
+						temp = temp + 55;
+					hextemp[n]= temp;
+					n += 1;
+					quotient = quotient / 16;
+				}
+				//swap result
+				description[j] = hextemp[1];
+				j += 1;
+				description[j] = hextemp[0];
+				j += 1;
+				i += 1;
+				length -= 1;
+			}
+			if (strlen(description) == 0)
+				strcpy(description, "Empty");
+		
+			PyObject *item = Py_BuildValue("{s:i,s:i,s:s}",
+						"descriptor_tag", descriptor_tag,
+						"descriptor_length", descriptor_length,
+						"hexcontent", description);
 						
 			PyList_Append(list, item);
 			Py_DECREF(item);
@@ -130,7 +205,7 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 			offset2 += (descriptor_length + 2);
 			transport_descriptor_length -= (descriptor_length + 2);
 
-			if (descriptor_tag == 0xb1)
+			if (descriptor_tag == 0xb1) // User defined Sky
 			{
 				unsigned char region_id;
 				region_id = data[offset3 + 1];
@@ -166,7 +241,7 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 					descriptor_length -= 9;
 				}
 			}
-			else if (descriptor_tag == 0x41)
+			else if (descriptor_tag == 0x41) // Service list descriptor 
 			{
 				while (descriptor_length > 0)
 				{
@@ -187,7 +262,97 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 					descriptor_length -= 3;
 				}
 			}
-			else if (descriptor_tag == 0xd3)
+			else if (descriptor_tag == 0x81)	// LCN descriptor (UPC, 0.8W)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = (data[offset3 + 2] << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0x83)	// LCN descriptor (NC+, 13E)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int visible_service_flag = (data[offset3 + 2] >> 7) & 0x01;
+					int logical_channel_number = ((data[offset3 + 2] & 0x03) << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"visible_service_flag", visible_service_flag,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0x86)	// LCN descriptor (DIGI 0.8W)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = (data[offset3 + 2] << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0x93)	// LCN descriptor (NOVA, 13E)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = (data[offset3 + 2] << 8) | data[offset3 + 3];
+
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"bouquet_id", bouquet_id,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else if (descriptor_tag == 0xd3) // User defined
 			{
 				while (descriptor_length > 0)
 				{
@@ -221,6 +386,69 @@ PyObject *ss_parse_bat(unsigned char *data, int length) {
 						descriptor_length -= 4;
 					}
 				}
+			}
+			else if (descriptor_tag == 0xe2) // LCN descriptor (Viasat, 4.8E)
+			{
+				while (descriptor_length > 0)
+				{
+					int service_id = (data[offset3] << 8) | data[offset3 + 1];
+					int logical_channel_number = ((data[offset3 + 2] & 0x03) << 8) | data[offset3 + 3];
+					
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+							"descriptor_tag", descriptor_tag,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"bouquet_id", bouquet_id,
+							"service_id", service_id,
+							"logical_channel_number", logical_channel_number);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+					
+					offset3 += 4;
+					descriptor_length -= 4;
+				}
+			}
+			else  // unknown descriptors
+			{
+				char description[2 * descriptor_length + 5];
+				memset(description, '\0', 2 * descriptor_length + 5);
+				int length = descriptor_length + 2;
+				int i = 0, j = 0;
+				while (length > 0)
+				{
+					int decimalNumber = data[offset3 + i - 2];
+					int quotient, n=0, temp;
+					char hextemp[3] = {'0','0','\0'};
+					quotient = decimalNumber;
+					while(quotient!=0) 
+					{
+						temp = quotient % 16;
+						if (temp < 10)
+							temp = temp + 48; 
+						else
+							temp = temp + 55;
+						hextemp[n]= temp;
+						n += 1;
+						quotient = quotient / 16;
+					}
+					description[j] = hextemp[1];
+					j += 1;
+					description[j] = hextemp[0];
+					j += 1;
+					i += 1;
+					length -= 1;
+				}
+				if (strlen(description) == 0)
+					strcpy(description, "Empty");
+			
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:s}",
+							"descriptor_tag", descriptor_tag,
+							"descriptor_length", descriptor_length,
+							"hexcontent", description);
+						
+				PyList_Append(list, item);
+				Py_DECREF(item);
 			}
 		}
 	}
@@ -279,7 +507,7 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 				
 				int fec_inner = data[offset2 + 12] & 0xf;
 
-				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 						"transport_stream_id", transport_stream_id,
 						"original_network_id", original_network_id,
 						"frequency", frequency,
@@ -290,7 +518,8 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 						"modulation_system", modulation_system,
 						"modulation_type", modulation_type,
 						"symbol_rate", symbol_rate,
-						"fec_inner", fec_inner);
+						"fec_inner", fec_inner,
+						"descriptor_tag", descriptor_tag);
 						
 				PyList_Append(list, item);
 				Py_DECREF(item);
@@ -319,14 +548,15 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 				
 				int fec_inner = data[offset2 + 12] & 0xf;
 
-				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 						"transport_stream_id", transport_stream_id,
 						"original_network_id", original_network_id,
 						"frequency", frequency,
 						"fec_outer", fec_outer,
 						"modulation_type", modulation_type,
 						"symbol_rate", symbol_rate,
-						"fec_inner", fec_inner);
+						"fec_inner", fec_inner,
+						"descriptor_tag", descriptor_tag);
 						
 				PyList_Append(list, item);
 				Py_DECREF(item);
@@ -349,7 +579,7 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 				int transmission_mode = (data[offset2 + 8] >> 1 & 0x03);
 				int other_frequency_flag = (data[offset2 + 8] & 0x01);
 				
-				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+				PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 						"transport_stream_id", transport_stream_id,
 						"original_network_id", original_network_id,
 						"frequency", frequency,
@@ -363,7 +593,8 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 						"code_rate_lp", code_rate_lp,
 						"guard_interval", guard_interval,
 						"transmission_mode", transmission_mode,
-						"other_frequency_flag", other_frequency_flag);
+						"other_frequency_flag", other_frequency_flag,
+						"descriptor_tag", descriptor_tag);
 						
 				PyList_Append(list, item);
 				Py_DECREF(item);
@@ -378,7 +609,7 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 					int plp_id = data[offset2 + 3];
 					int T2_system_id = (data[offset2 + 4] << 8) | data[offset2 + 5];
 					
-					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:s,s:i,s:i,s:s}",
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:s,s:i,s:i,s:i}",
 							"transport_stream_id", transport_stream_id,
 							"original_network_id", original_network_id,
 							"plp_id", plp_id,
@@ -386,14 +617,14 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 							"delivery_system_type", "DVB-T2",
 							"system", system,
 							"inversion", inversion,
-							"dummy", "dummy");
+							"descriptor_tag", descriptor_tag);
 						
 					PyList_Append(list, item);
 					Py_DECREF(item);
 				}
 			
 			}
-			else if (descriptor_tag == 0x41)	// service_list_descriptor
+			else if (descriptor_tag == 0x41)	// Service list descriptor
 			{
 				int offset3 = offset2 + 2;
 				while (offset3 < (offset2 + descriptor_length + 2))
@@ -402,17 +633,18 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 					int service_type = data[offset3 + 2];
 
 					offset3 += 3;
-					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i}",
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i}",
 							"transport_stream_id", transport_stream_id,
 							"original_network_id", original_network_id,
 							"service_id", service_id,
-							"service_type", service_type);
+							"service_type", service_type,
+							"descriptor_tag", descriptor_tag);
 							
 					PyList_Append(list, item);
 					Py_DECREF(item);
 				}
 			}
-			else if (descriptor_tag == 0x83)	// lcn_descriptor
+			else if (descriptor_tag == 0x83)	// LCN descriptor
 			{
 				int offset3 = offset2 + 2;
 				while (offset3 < (offset2 + descriptor_length + 2))
@@ -422,18 +654,60 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 					int logical_channel_number = ((data[offset3 + 2] & 0x03) << 8) | data[offset3 + 3];
 
 					offset3 += 4;
-					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i}",
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
 							"transport_stream_id", transport_stream_id,
 							"original_network_id", original_network_id,
 							"service_id", service_id,
 							"visible_service_flag", visible_service_flag,
-							"logical_channel_number", logical_channel_number);
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
 							
 					PyList_Append(list, item);
 					Py_DECREF(item);
 				}
 			}
-			else if (descriptor_tag == 0x88)	// HD simulcast logical channel descriptor
+			else if (descriptor_tag == 0x87)	// LCN V2 descriptor (Canal Digital Nordic 0.8W)
+			{
+				int offset3 = offset2 + 2;
+				int channel_list_id = data[offset3];
+				int channel_list_name_length = data[offset3 + 1];
+
+				char channel_list_name[channel_list_name_length + 1];
+				memset(channel_list_name, '\0', channel_list_name_length + 1);
+				memcpy(channel_list_name, data + offset3 + 2, channel_list_name_length);
+				char *channel_list_name_ptr = channel_list_name;
+					
+				char country_code[3];
+				memset(country_code, '\0', 3);
+				memcpy(country_code, data + offset3 + 2 + channel_list_name_length, 3);
+				char *country_code_ptr = country_code;
+				
+				int descriptor_length_2 = offset3 + 2 + channel_list_name_length + 3;
+				int offset4 = offset3 + 2 + channel_list_name_length + 3 + 1;
+				
+				while (offset4 < (offset3 + descriptor_length_2 + 2))
+				{
+					int service_id = (data[offset4] << 8) | data[offset4 + 1];
+					int visible_service_flag = (data[offset4 + 2] >> 7) & 0x01;
+					int logical_channel_number = ((data[offset4 + 2] & 0x03) << 8) | data[offset4 + 3];
+
+					offset4 += 4;
+					PyObject *item = Py_BuildValue("{s:i,s:s,s:s,s:i,s:i,s:i,s:i,s:i,s:i}",
+							"channel_list_id", channel_list_id,
+							"channel_list_name", channel_list_name_ptr,
+							"country_code", country_code_ptr,
+							"transport_stream_id", transport_stream_id,
+							"original_network_id", original_network_id,
+							"service_id", service_id,
+							"visible_service_flag", visible_service_flag,
+							"logical_channel_number", logical_channel_number,
+							"descriptor_tag", descriptor_tag);
+							
+					PyList_Append(list, item);
+					Py_DECREF(item);
+				}
+			}
+			else if (descriptor_tag == 0x88)	// HD simulcast LCN descriptor
 			{
 				int offset3 = offset2 + 2;
 				while (offset3 < (offset2 + descriptor_length + 2))
@@ -443,13 +717,13 @@ PyObject *ss_parse_nit(unsigned char *data, int length) {
 					int hd_logical_channel_number = ((data[offset3 + 2] & 0x03) << 8) | data[offset3 + 3];
 
 					offset3 += 4;
-					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:s}",
+					PyObject *item = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
 							"transport_stream_id", transport_stream_id,
 							"original_network_id", original_network_id,
 							"service_id", service_id,
 							"visible_service_flag", visible_service_flag,
 							"logical_channel_number", hd_logical_channel_number,
-							"logical_channel_number_type", "HD");
+							"descriptor_tag", descriptor_tag);
 							
 					PyList_Append(list, item);
 					Py_DECREF(item);
@@ -499,7 +773,7 @@ PyObject *ss_parse_sdt(unsigned char *data, int length) {
 			int tag = data[offset2];
 			int size = data[offset2 + 1];
 			
-			if (tag == 0x48)	// service_descriptor
+			if (tag == 0x48)	// Service descriptor
 			{
 				service_type = data[offset2 + 2];
 				int service_provider_name_length = data[offset2 + 3];
@@ -593,7 +867,7 @@ PyObject *ss_parse_fastscan(unsigned char *data, int length) {
 			int tag = data[offset2];
 			int size = data[offset2 + 1];
 			
-			if (tag == 0x48)	// service_descriptor
+			if (tag == 0x48)	// Service descriptor
 			{
 				service_type = data[offset2 + 2];
 				int service_provider_name_length = data[offset2 + 3];
@@ -639,18 +913,39 @@ PyObject *ss_parse_fastscan(unsigned char *data, int length) {
 	return list;
 }
 
-PyObject *ss_parse_header(unsigned char *data, int length, const char *variable_key_name) {
+PyObject *ss_parse_header(unsigned char *data, int length, const char *variable_key_name) //NIT and BAT
+{
 	int table_id = data[0];
 	int variable_id = (data[3] << 8) | data[4];
 	int version_number = (data[5] >> 1) & 0x1f;
 	int current_next_indicator = data[5] & 0x01;
 	int section_number = data[6];
 	int last_section_number = data[7];
+	int network_descriptors_length = ((data[8] & 0x0f) << 8) | data[9];
+	int original_network_id = (data[network_descriptors_length + 5] << 8) | data[network_descriptors_length + 6];
 	
-	return Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 		"table_id", table_id, variable_key_name, variable_id,
 		"version_number", version_number, "current_next_indicator", current_next_indicator,
-		"section_number", section_number, "last_section_number", last_section_number);
+		"section_number", section_number, "last_section_number", last_section_number,
+		"original_network_id", original_network_id);
+}
+
+PyObject *ss_parse_header_2(unsigned char *data, int length, const char *variable_key_name) //SDT and Fastscan
+{
+	int table_id = data[0];
+	int variable_id = (data[3] << 8) | data[4];
+	int version_number = (data[5] >> 1) & 0x1f;
+	int current_next_indicator = data[5] & 0x01;
+	int section_number = data[6];
+	int last_section_number = data[7];
+	int original_network_id = (data[8] << 8) | data[9];
+	
+	return Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+		"table_id", table_id, variable_key_name, variable_id,
+		"version_number", version_number, "current_next_indicator", current_next_indicator,
+		"section_number", section_number, "last_section_number", last_section_number,
+		"original_network_id", original_network_id);
 }
 
 PyObject *ss_parse_table(unsigned char *data, int length) {
@@ -747,7 +1042,7 @@ PyObject *ss_read_sdt(PyObject *self, PyObject *args) {
 	if (size != section_length + 3)
 		return Py_None;
 
-	header = ss_parse_header(buffer, section_length, "transport_stream_id");
+	header = ss_parse_header_2(buffer, section_length, "transport_stream_id");
 	content = ss_parse_sdt(buffer, section_length);
 	
 	if (!header || !content)
@@ -779,7 +1074,7 @@ PyObject *ss_read_fastscan(PyObject *self, PyObject *args) {
 	if (size != section_length + 3)
 		return Py_None;
 
-	header = ss_parse_header(buffer, section_length, "fastscan_id");
+	header = ss_parse_header_2(buffer, section_length, "fastscan_id");
 	content = ss_parse_fastscan(buffer, section_length);
 	
 	if (!header || !content)

@@ -3,18 +3,13 @@ from .. import _
 
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
-from Components.MenuList import MenuList
-from Components.ActionMap import ActionMap
-from Components.Button import Button
 from Components.Label import Label
 from Components.Pixmap import Pixmap
 from Components.ProgressBar import ProgressBar
 
 from Components.config import config
-from Components.ServiceEventTracker import ServiceEventTracker
-from Components.TuneTest import Tuner
 from Components.NimManager import nimmanager
-from enigma import eTimer, eServiceReference, eDVBDB, iPlayableService, eDVBFrontendParametersSatellite,eDVBFrontendParametersTerrestrial, eDVBFrontendParametersCable, eDVBResourceManager, eDVBFrontendParameters
+from enigma import eTimer, eDVBDB, eDVBFrontendParametersSatellite,eDVBFrontendParametersTerrestrial, eDVBFrontendParametersCable, eDVBResourceManager, eDVBFrontendParameters
 
 from manager import Manager
 from providerconfig import ProviderConfig
@@ -25,7 +20,7 @@ from .. import log
 import os
 import sys
 
-from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN, fileExists
+from Tools.Directories import resolveFilename, fileExists
 try:
 	from Tools.Directories import SCOPE_ACTIVE_SKIN
 except:
@@ -403,7 +398,12 @@ class AutoBouquetsMaker(Screen):
 			params_fe = eDVBFrontendParameters()
 			params_fe.setDVBC(params)
 
-		self.rawchannel.requestTsidOnid()
+		try:
+			self.rawchannel.requestTsidOnid()
+		except (TypeError):
+			# for compatibility with some third party images
+			self.rawchannel.requestTsidOnid(self.gotTsidOnid)
+
 		self.frontend.tune(params_fe)
 		self.manager.setAdapter(0)	# FIX: use the correct device
 		self.manager.setDemuxer(demuxer_id)
@@ -441,6 +441,25 @@ class AutoBouquetsMaker(Screen):
 			return
 
 		self.locktimer.start(100, 1)
+
+	# for compatibility with some third party images
+	def gotTsidOnid(self, tsid, onid):
+		print>>log, "[AutoBouquetsMaker] got tsid, onid:", tsid, onid
+
+		INTERNAL_PID_STATUS_NOOP = 0
+		INTERNAL_PID_STATUS_WAITING = 1
+		INTERNAL_PID_STATUS_SUCCESSFUL = 2
+		INTERNAL_PID_STATUS_FAILED = 3
+
+		if tsid is not None and onid is not None:
+			self.pidStatus = INTERNAL_PID_STATUS_SUCCESSFUL
+			self.tsid = tsid
+			self.onid = onid
+		else:
+			self.pidStatus = INTERNAL_PID_STATUS_FAILED
+			self.tsid = -1
+			self.onid = -1
+		self.timer.start(100, True)
 
 	def doScan(self):
 		if not self.manager.read(self.selectedProviders[self.currentAction], self.providers):

@@ -46,6 +46,10 @@ if HD1200
 SUBDIRS += F3LEDControl XtrendRemote
 endif
 
+if HD1265
+SUBDIRS += F3LEDControl XtrendRemote
+endif
+
 if HD500C
 SUBDIRS += F3LEDControl XtrendRemote
 endif
@@ -63,6 +67,10 @@ SUBDIRS += OdinM7VFDControl
 endif
 
 if ODINM7C
+SUBDIRS += OdinM7VFDControl
+endif
+
+if PROTEK9900LX
 SUBDIRS += OdinM7VFDControl
 endif
 
@@ -114,11 +122,19 @@ if S7300S
 SUBDIRS += F3LEDControl
 endif
 
+if S7400S
+SUBDIRS += F3LEDControl
+endif
+
 if SH1
 SUBDIRS += F3LEDControl
 endif
 
 if H3
+SUBDIRS += F3LEDControl
+endif
+
+if LC
 SUBDIRS += F3LEDControl
 endif
 
@@ -150,6 +166,10 @@ if VUZERO
 SUBDIRS += FirmwareUpgrade VuRemote Blindscan
 endif
 
+if VUSOLO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup Blindscan 
+endif
+
 if GIGABLUE
 SUBDIRS += GigaBlueVFDControl Blindscan AudioEffect
 endif
@@ -175,12 +195,16 @@ if GBQUAD
 SUBDIRS += TransCodingSetup
 endif
 
+if GB7356
+SUBDIRS += TransCodingSetup
+endif
+
 if VUPLUS
 SUBDIRS += HbbTV AudioEffect
 endif
 
 if WETEK
-SUBDIRS += RCUSelect
+SUBDIRS += RCUSelect ReZap
 endif
 
 if XC7362

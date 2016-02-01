@@ -34,7 +34,6 @@ AC_DEFINE_UNQUOTED(ARCH,"$ARCH",[box arch])
 
 AM_CONDITIONAL(SH4, test `echo "$ARCH" | cut -b 1-3` == "sh4")
 AM_CONDITIONAL(MIPSEL, test `echo "$ARCH" | cut -b 1-6` == "mipsel")
-AM_CONDITIONAL(ARM, test `echo "$ARCH" | cut -b 1-3` == "arm")
 
 AC_ARG_WITH(boxtype,
 	[  --with-boxtype=NAME box type [[none,dm7025,dm800...]]],
@@ -103,6 +102,7 @@ AM_CONDITIONAL(GB800SEPLUS, test "$BOXTYPE" == "gb800seplus")
 AM_CONDITIONAL(GB800UEPLUS, test "$BOXTYPE" == "gb800ueplus")
 AM_CONDITIONAL(GBQUADPLUS, test "$BOXTYPE" == "gbquadplus")
 AM_CONDITIONAL(GBQUAD, test "$BOXTYPE" == "gbquad")
+AM_CONDITIONAL(GB7356, test "$BOXTYPE" == "gb7356")
 AM_CONDITIONAL(GBIPBOX, test "$BOXTYPE" == "gbipbox")
 AM_CONDITIONAL(INIHDE, test "$BOXTYPE" == "inihde")
 AM_CONDITIONAL(INIHDE2, test `echo "$BOXTYPE" | cut -b 1-7` == inihde2)
@@ -111,9 +111,11 @@ AM_CONDITIONAL(INIHDX, test "$BOXTYPE" == "inihdx")
 AM_CONDITIONAL(IXUSSZERO, test "$BOXTYPE" == "ixusszero")
 AM_CONDITIONAL(IXUSSONE, test "$BOXTYPE" == "ixussone")
 AM_CONDITIONAL(HD2400, test "$BOXTYPE" == "hd2400")
+AM_CONDITIONAL(HD1265, test "$BOXTYPE" == "hd1265")
 AM_CONDITIONAL(HD1200, test "$BOXTYPE" == "hd1200")
 AM_CONDITIONAL(HD1100, test "$BOXTYPE" == "hd1100")
 AM_CONDITIONAL(HD500C, test "$BOXTYPE" == "hd500c")
+AM_CONDITIONAL(PROTEK9900LX, test "$BOXTYPE" == "9900lx")
 AM_CONDITIONAL(ODINM7, test "$BOXTYPE" == odinm7)
 AM_CONDITIONAL(ODINM7S, test "$BOXTYPE" == odinm7s)
 AM_CONDITIONAL(ODINM7C, test "$BOXTYPE" == odinm7c)
@@ -125,12 +127,16 @@ AM_CONDITIONAL(VUSOLO, test "$BOXTYPE" == vusolo)
 AM_CONDITIONAL(VUSOLOSE, test "$BOXTYPE" == vusolose)
 AM_CONDITIONAL(VUDUO, test "$BOXTYPE" == vuduo)
 AM_CONDITIONAL(VUSOLO2, test "$BOXTYPE" == vusolo2)
+AM_CONDITIONAL(VUSOLO4K, test "$BOXTYPE" == vusolo4k)
 AM_CONDITIONAL(VUDUO2, test "$BOXTYPE" == vuduo2)
 AM_CONDITIONAL(VUZERO, test "$BOXTYPE" == vuzero)
 AM_CONDITIONAL(XP1000, test "$BOXTYPE" == xp1000)
+AM_CONDITIONAL(S7000S, test `echo "$BOXTYPE"` == "7000s")
 AM_CONDITIONAL(S7300S, test `echo "$BOXTYPE"` == "7300s")
+AM_CONDITIONAL(S7400S, test `echo "$BOXTYPE"` == "7400s")
 AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(H3, test `echo "$BOXTYPE"` == "h3")
+AM_CONDITIONAL(LC, test `echo "$BOXTYPE"` == "lc")
 AM_CONDITIONAL(TRIPLEX, test `echo "$BOXTYPE"` == "triplex")
 AM_CONDITIONAL(SPARK, test `echo "$BOXTYPE" | cut -b 1-5` == spark)
 AM_CONDITIONAL(XC7362, test "$BOXTYPE" == xc7362)
@@ -140,7 +146,7 @@ if test `echo "$BOXTYPE" | cut -b 1-2` == "dm"; then
 	AC_DEFINE(DREAMBOX, 1, [Dreambox hardware])
 fi
 
-AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5 -o "$BOXTYPE" == dags7335 -o "$BOXTYPE" == dags7362 -o "$BOXTYPE" == dags7356 -o "$BOXTYPE" == triplex)
+AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm800sev2 -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5 -o "$BOXTYPE" == dags7335 -o "$BOXTYPE" == dags7362 -o "$BOXTYPE" == dags7356 -o "$BOXTYPE" == triplex)
 
 AC_CONFIG_FILES([
 Makefile
@@ -248,7 +254,9 @@ LCD4linux/src/data/Clock6/Makefile
 LCD4linux/src/meteo/Makefile
 LCD4linux/src/renderer/Makefile
 LCD4linux/src/wetter/Makefile
-LCD4linux/src/arm/Makefile
+LCD4linux/src/cube/Makefile
+LCD4linux/src/solo4k/Makefile
+LCD4linux/src/wetek/Makefile
 LCD4linux/src/mips/Makefile
 LCD4linux/src/sh4/Makefile
 LCD4linux/meta/Makefile
@@ -306,8 +314,13 @@ TunerServer/src/Makefile
 TunerServer/meta/Makefile
 TunerServer/po/Makefile
 
+ReZap/Makefile
+ReZap/src/Makefile
+ReZap/meta/Makefile
+
 RCUSelect/Makefile
 RCUSelect/src/Makefile
+RCUSelect/conf/Makefile
 RCUSelect/po/Makefile
 RCUSelect/meta/Makefile
 

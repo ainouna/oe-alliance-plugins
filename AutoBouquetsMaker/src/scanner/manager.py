@@ -216,27 +216,29 @@ class Manager():
 				scanner.setNitPid(providers[provider_key]["transponder"]["nit_pid"])
 				scanner.setNitCurrentTableId(providers[provider_key]["transponder"]["nit_current_table_id"])
 				scanner.setNitOtherTableId(providers[provider_key]["transponder"]["nit_other_table_id"])
+				scanner.setVisibleServiceFlagIgnore(providers[provider_key]["ignore_visible_service_flag"])
 
-				if providers[provider_key]["protocol"] in ('lcn', 'lcn2', 'nolcn', 'vmuk'):
+				if providers[provider_key]["protocol"] in ('lcn', 'lcn2', 'lcnbat', 'lcnbat2', 'nolcn', 'vmuk'):
 					scanner.setSdtPid(providers[provider_key]["transponder"]["sdt_pid"])
 					scanner.setSdtCurrentTableId(providers[provider_key]["transponder"]["sdt_current_table_id"])
 					scanner.setSdtOtherTableId(providers[provider_key]["transponder"]["sdt_other_table_id"])
 
 					if providers[provider_key]["streamtype"] == 'dvbc':
 						bouquet = providers[provider_key]["bouquets"][bouquet_key]
-						tmp = scanner.updateTransponders(self.transponders, True, customtransponders, bouquet["netid"],bouquet["bouquettype"])
+						tmp = scanner.updateTransponders(self.transponders, True, customtransponders, bouquet["netid"], bouquet["bouquettype"])
 					else:
-						tmp = scanner.updateTransponders(self.transponders, True, customtransponders)
-					if providers[provider_key]["protocol"] == 'vmuk':
-						self.services[provider_key] = scanner.updateAndReadServicesVMUK(
-								providers[provider_key]["namespace"], self.transponders,
-								providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
-								tmp["service_dict_tmp"], bouquet_key)
-					else:
-						self.services[provider_key] = scanner.updateAndReadServicesLCN(
-								providers[provider_key]["namespace"], self.transponders,
-								providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
-								tmp["logical_channel_number_dict"], tmp["service_dict_tmp"], providers[provider_key]["protocol"], bouquet_key)
+						try:
+							bouquet_id = providers[provider_key]["bouquets"][bouquet_key]["bouquet"]
+						except:
+							bouquet_id = -1
+						tmp = scanner.updateTransponders(self.transponders, True, customtransponders, bouquet_id = bouquet_id)
+					if providers[provider_key]["protocol"] in ("lcnbat", "lcnbat2"):
+						scanner.setBatPid(providers[provider_key]["transponder"]["bat_pid"])
+						scanner.setBatTableId(providers[provider_key]["transponder"]["bat_table_id"])
+						tmp["logical_channel_number_dict"], tmp["TSID_ONID_list"] = scanner.readLCNBAT(bouquet_id, providers[provider_key]["bouquets"][bouquet_key]["region"], tmp["TSID_ONID_list"])
+					self.services[provider_key] = scanner.updateAndReadServicesLCN(
+						self.transponders, providers[provider_key]["servicehacks"], tmp["TSID_ONID_list"],
+						tmp["logical_channel_number_dict"], tmp["service_dict_tmp"], providers[provider_key]["protocol"], bouquet_key)
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0
 
@@ -249,8 +251,7 @@ class Manager():
 
 					tmp = scanner.updateTransponders(self.transponders, True)
 					self.services[provider_key] = scanner.updateAndReadServicesFastscan(
-							providers[provider_key]["namespace"], self.transponders,
-							providers[provider_key]["servicehacks"], tmp["transport_stream_id_list"],
+							self.transponders, providers[provider_key]["servicehacks"],
 							tmp["logical_channel_number_dict"])
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0
@@ -268,7 +269,7 @@ class Manager():
 					scanner.updateTransponders(self.transponders, False)
 					bouquet = providers[provider_key]["bouquets"][bouquet_key]
 					self.services[provider_key] = scanner.updateAndReadServicesSKY(bouquet["bouquet"],
-							bouquet["region"], bouquet["namespace"], bouquet["key"], self.transponders,
+							bouquet["region"], bouquet["key"], self.transponders,
 							providers[provider_key]["servicehacks"])
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0
@@ -286,7 +287,7 @@ class Manager():
 					scanner.updateTransponders(self.transponders, False)
 					bouquet = providers[provider_key]["bouquets"][bouquet_key]
 					self.services[provider_key] = scanner.updateAndReadServicesFreeSat(bouquet["bouquet"],
-							bouquet["region"], bouquet["namespace"], bouquet["key"], self.transponders,
+							bouquet["region"], bouquet["key"], self.transponders,
 							providers[provider_key]["servicehacks"])
 
 					ret = len(self.services[provider_key]["video"].keys()) > 0 or len(self.services[provider_key]["radio"].keys()) > 0

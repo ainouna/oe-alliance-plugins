@@ -74,43 +74,46 @@ def createTransCodingConfig(encoder):
 		else:
 			choice = ConfigSelection(default = "50000", choices = [("-1", "Auto"), ("23976", "23.976 fps"), ("24000", "24 fps"), ("25000", "25 fps"), ("29970", "29.970 fps"), ("30000", "30 fps"), ("50000", "50 fps"), ("59940", "59.940 fps"), ("60000", "60 fps")])
 		config.plugins.transcodingsetup.encoder[int(encoder)].framerate = choice
-	
+
 	if checkSupportAdvanced():
 		if (hasattr(config.plugins.transcodingsetup.encoder[int(encoder)], "bitrate") or hasattr(config.plugins.transcodingsetup.encoder[int(encoder)], "framerate")):
 			choice = ConfigSelection(default = "Off", choices = [ ("On", _("On")), ("Off", _("Off")) ])
 			config.plugins.transcodingsetup.encoder[int(encoder)].automode = choice
-	
+
 		if fileExists(getProcPath(encoder, "resolution")):
-			choice = ConfigSelection(default = "480p", choices = [ ("480p", _("480p")), ("576p", _("576p")), ("720p", _("720p")), ("320x240", _("320x240")), ("160x120", _("160x120")) ])
+			resolution_choices = [("480p", _("480p")), ("576p", _("576p")), ("720p", _("720p")), ("320x240", _("320x240")), ("160x120", _("160x120"))]
+			if getBoxType() in ("vusolo4k"):
+				resolution_choices.insert(3, ("1080p", _("1080p")))
+			choice = ConfigSelection(default = "480p", choices=resolution_choices)
 			config.plugins.transcodingsetup.encoder[int(encoder)].resolution = choice
-	
+
 		if fileExists(getProcPath(encoder, "aspectratio")):
 			choice = ConfigSelection(default = "2", choices = [ ("0", _("auto")), ("1", _("4x3")), ("2", _("16x9")) ])
 			config.plugins.transcodingsetup.encoder[int(encoder)].aspectratio = choice
-	
+
 		if fileExists(getProcPath(encoder, "audiocodec")):
 			choice = ConfigSelection(default = "aac", choices = [("mpg", _("mpg")), ("mp3", _("mp3")), ("aac", _("aac")), ("aac+", _("aac+")), ("aac+loas", _("aac+loas")), ("aac+adts", _("aac+adts")), ("ac3", _("ac3"))])
 			config.plugins.transcodingsetup.encoder[int(encoder)].audiocodec = choice
-	
+
 		if fileExists(getProcPath(encoder, "videocodec")):
 			choice = ConfigSelection(default = "h264", choices = [ ("h264", _("h264")) ])
 			config.plugins.transcodingsetup.encoder[int(encoder)].videocodec = choice
-	
+
 		if fileExists(getProcPath(encoder, "gopframeb")):
 			choice = ConfigInteger(default = 0, limits = (0, 60))
 			config.plugins.transcodingsetup.encoder[int(encoder)].gopframeb = choice
-	
+
 		if fileExists(getProcPath(encoder, "gopframep")):
 			choice = ConfigInteger(default = 29, limits = (0, 60))
 			config.plugins.transcodingsetup.encoder[int(encoder)].gopframep = choice
-	
+
 		if fileExists(getProcPath(encoder, "level")):
 			choice = ConfigSelection(default = "3.1", choices = [("1.0", _("1.0")), ("2.0", _("2.0")),
 				("2.1", _("2.1")), ("2.2", _("2.2")), ("3.0", _("3.0")), ("3.1", _("3.1")),
 				("3.2", _("3.2")), ("4.0", _("4.0")), ("4.1", _("4.1")), ("4.2", _("4.2")),
 				("5.0", _("5.0")), ("low", _("low")), ("main", _("main")), ("high", _("high"))])
 			config.plugins.transcodingsetup.encoder[int(encoder)].level = choice
-	
+
 		if fileExists(getProcPath(encoder, "profile")):
 			choice = ConfigSelection(default = "baseline", choices = [("baseline", _("baseline")), ("simple", _("simple")), ("main", _("main")), ("high", _("high")), ("advanced simple", _("advancedsimple"))])
 			config.plugins.transcodingsetup.encoder[int(encoder)].profile = choice
