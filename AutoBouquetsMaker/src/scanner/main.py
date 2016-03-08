@@ -207,6 +207,7 @@ class AutoBouquetsMaker(Screen):
 		self.timer.start(100, 1)
 
 	def doTune(self):
+		print>>log, "[AutoBouquetsMaker] searching for tuner for %s" % self.providers[self.currentAction]["name"]
 		from Screens.Standby import inStandby
 		if self.providers[self.currentAction]["streamtype"] == "dvbs":
 			transponder = self.providers[self.currentAction]["transponder"]
@@ -229,11 +230,17 @@ class AutoBouquetsMaker(Screen):
 
 		nimList = []
 		for nim in nimmanager.nim_slots:
+			if self.providers[self.currentAction]["streamtype"] == "dvbs" and nim.isCompatible("DVB-S") and nim.config_mode == 'advanced':
+				try:
+					if config.Nims[nim.slot].advanced.unicableconnected is not None and config.Nims[nim.slot].advanced.unicableconnected.value == True:
+						continue # do not load FBC links, only root tuners
+				except:
+					pass
 			if (nim.config_mode not in ("loopthrough", "satposdepends", "nothing")) and ((self.providers[self.currentAction]["streamtype"] == "dvbs" and nim.isCompatible("DVB-S")) or (self.providers[self.currentAction]["streamtype"] == "dvbc" and nim.isCompatible("DVB-C")) or (self.providers[self.currentAction]["streamtype"] == "dvbt" and nim.isCompatible("DVB-T"))):
 				nimList.append(nim.slot)
 		if len(nimList) == 0:
 			print>>log, "[AutoBouquetsMaker] No NIMs found"
-			self.showError(_('No NIMs found'))
+			self.showError(_('No NIMs found for ') + self.providers[self.currentAction]["name"])
 			return
 
 		resmanager = eDVBResourceManager.getInstance()
@@ -306,7 +313,7 @@ class AutoBouquetsMaker(Screen):
 
 		if current_slotid == -1:
 			print>>log, "[AutoBouquetsMaker] No valid NIM found"
-			self.showError(_('No valid NIM found'))
+			self.showError(_('No valid NIM found for ') + self.providers[self.currentAction]["name"])
 			return
 
 		if not self.rawchannel:
