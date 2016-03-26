@@ -36,6 +36,9 @@ XML_BLINDSCAN_DIR = "/tmp"
 
 _supportNimType = { 'AVL1208':'', 'AVL6222':'6222_', 'AVL6211':'6211_', 'BCM7356':'bcm7346_'}
 
+# For STBs that support multiple DVB-S tuner models, e.g. Solo 4K.
+_unsupportedNims = ( 'Vuplus DVB-S NIM(7376 FBC)', ) # format = nim.description from nimmanager
+
 class Blindscan(ConfigListScreen, Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
@@ -284,7 +287,9 @@ class Blindscan(ConfigListScreen, Screen):
 		for n in nimmanager.nim_slots:
 			if n.config_mode == "nothing":
 				continue
-			if n.isCompatible("DVB-S") and len(nimmanager.getSatListForNim(n.slot)) < 1:
+			if n.isCompatible("DVB-S") and len(nimmanager.getSatListForNim(n.slot)) < 1: # empty setup
+				continue
+			if n.isCompatible("DVB-S") and n.description in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
 				continue
 			if n.config_mode in ("loopthrough", "satposdepends"):
 				root_id = nimmanager.sec.getRoot(n.slot_id, int(n.config.connectedTo.value))
@@ -568,6 +573,8 @@ class Blindscan(ConfigListScreen, Screen):
 				cmd = "%s %d %d %d %d %d %d %d %d" % (self.binName, temp_start_int_freq, temp_end_int_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid))
 			except: return
 
+		elif brandoem == 'ceryon':
+			cmd = "ceryon_blindscan %d %d %d %d %d %d %d %d %d" % (temp_start_int_freq, temp_end_int_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid), self.is_c_band_scan)
 		elif brandoem == 'xtrend':
 			cmd = "avl_xtrend_blindscan %d %d %d %d %d %d %d %d" % (temp_start_int_freq, temp_end_int_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid)) # commented out by Huevos cmd = "avl_xtrend_blindscan %d %d %d %d %d %d %d %d" % (self.blindscan_start_frequency.value/1000000, self.blindscan_stop_frequency.value/1000000, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid))
 		elif brandoem == 'odin':
@@ -631,7 +638,9 @@ class Blindscan(ConfigListScreen, Screen):
 					sys = { "DVB-S" : eDVBFrontendParametersSatellite.System_DVB_S,
 						"DVB-S2" : eDVBFrontendParametersSatellite.System_DVB_S2}
 					qam = { "QPSK" : parm.Modulation_QPSK,
-						"8PSK" : parm.Modulation_8PSK}
+								"8PSK" : parm.Modulation_8PSK,
+								"16APSK" : parm.Modulation_16APSK,
+								"32APSK" : parm.Modulation_32APSK}
 					inv = { "INVERSION_OFF" : parm.Inversion_Off,
 						"INVERSION_ON" : parm.Inversion_On,
 						"INVERSION_AUTO" : parm.Inversion_Unknown}
@@ -1002,6 +1011,7 @@ def BlindscanSetup(menuid, **kwargs):
 
 def Plugins(**kwargs):
 	if nimmanager.hasNimType("DVB-S"):
-		return PluginDescriptor(name=_("Blind scan"), description=_("Scan satellites for new transponders"), where = PluginDescriptor.WHERE_MENU, fnc=BlindscanSetup)
-	else:
-		return []
+		for n in nimmanager.nim_slots:
+			if n.isCompatible("DVB-S") and n.description not in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
+				return PluginDescriptor(name=_("Blind scan"), description=_("Scan satellites for new transponders"), where = PluginDescriptor.WHERE_MENU, fnc=BlindscanSetup)
+	return []

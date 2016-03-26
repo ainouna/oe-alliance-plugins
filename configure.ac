@@ -136,12 +136,14 @@ AM_CONDITIONAL(S7300S, test `echo "$BOXTYPE"` == "7300s")
 AM_CONDITIONAL(S7400S, test `echo "$BOXTYPE"` == "7400s")
 AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(H3, test `echo "$BOXTYPE"` == "h3")
+AM_CONDITIONAL(H5, test `echo "$BOXTYPE"` == "h5")
 AM_CONDITIONAL(LC, test `echo "$BOXTYPE"` == "lc")
 AM_CONDITIONAL(TRIPLEX, test `echo "$BOXTYPE"` == "triplex")
 AM_CONDITIONAL(SPARK, test `echo "$BOXTYPE" | cut -b 1-5` == spark)
 AM_CONDITIONAL(XC7362, test "$BOXTYPE" == xc7362)
 AM_CONDITIONAL(XC7358, test "$BOXTYPE" == xc7358)
 AM_CONDITIONAL(XC7358CI, test "$BOXTYPE" == xc7358ci)
+AM_CONDITIONAL(WETEKPLAY, test "$BOXTYPE" == wetekplay)
 if test `echo "$BOXTYPE" | cut -b 1-2` == "dm"; then
 	AC_DEFINE(DREAMBOX, 1, [Dreambox hardware])
 fi
@@ -155,16 +157,6 @@ Makefile
 3GModemManager/src/Makefile
 3GModemManager/src/script/Makefile
 3GModemManager/meta/Makefile
-
-AutoBouquetsMaker/Makefile
-AutoBouquetsMaker/images/Makefile
-AutoBouquetsMaker/lib/Makefile
-AutoBouquetsMaker/meta/Makefile
-AutoBouquetsMaker/po/Makefile
-AutoBouquetsMaker/providers/Makefile
-AutoBouquetsMaker/src/Makefile
-AutoBouquetsMaker/src/scanner/Makefile
-AutoBouquetsMaker/custom/Makefile
 
 AudioEffect/Makefile
 AudioEffect/src/Makefile
@@ -197,6 +189,7 @@ DLNAServer/meta/Makefile
 DMBlindscan/Makefile
 DMBlindscan/src/Makefile
 DMBlindscan/meta/Makefile
+DMBlindscan/po/Makefile
 
 FirmwareUpgrade/Makefile
 FirmwareUpgrade/src/Makefile
