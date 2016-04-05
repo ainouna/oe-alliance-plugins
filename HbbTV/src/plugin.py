@@ -443,7 +443,7 @@ from Screens.StartWizard import config
 
 def Plugins(**kwargs):
 	l = []
-	if not config.misc.firstrun.value
+	if not config.misc.firstrun.value:
 		l.append(PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, fnc=auto_start_main))
 		l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
 		l.append(PluginDescriptor(name=_("YouTube TV"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_youtubetv_main, needsRestart=True))
