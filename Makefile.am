@@ -27,7 +27,7 @@ SUBDIRS +=  DMBlindscan
 endif
 
 if XTREND
-SUBDIRS += XtrendFancontrol Blindscan XtrendRemote
+SUBDIRS += XtrendFancontrol Blindscan
 endif
 
 if ET10000
