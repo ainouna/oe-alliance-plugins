@@ -67,6 +67,7 @@ AM_CONDITIONAL(DAGS5, test "$BOXTYPE" == "dags5")
 AM_CONDITIONAL(DAGS6, test "$BOXTYPE" == "dags6")
 AM_CONDITIONAL(DAGS7335, test "$BOXTYPE" == "dags7335")
 AM_CONDITIONAL(DAGS7362, test "$BOXTYPE" == "dags7362")
+AM_CONDITIONAL(DAGS73625, test "$BOXTYPE" == "dags73625")
 AM_CONDITIONAL(DAGS7356, test "$BOXTYPE" == "dags7356")
 AM_CONDITIONAL(DM500HD, test "$BOXTYPE" == "dm500hd")
 AM_CONDITIONAL(DM500HDV2, test "$BOXTYPE" == "dm500hdv2")
@@ -95,6 +96,9 @@ AM_CONDITIONAL(EW7362, test `echo "$BOXTYPE"` == "ew7362")
 AM_CONDITIONAL(EW7356, test `echo "$BOXTYPE"` == "ew7356")
 AM_CONDITIONAL(FORMULER1, test "$BOXTYPE" == formuler1)
 AM_CONDITIONAL(FORMULER3, test "$BOXTYPE" == formuler3)
+AM_CONDITIONAL(FORMULER4, test "$BOXTYPE" == formuler4)
+AM_CONDITIONAL(FORMULER4TURBO, test "$BOXTYPE" == formuler4turbo)
+AM_CONDITIONAL(G100, test "$BOXTYPE" == "g100")
 AM_CONDITIONAL(GB800SOLO, test "$BOXTYPE" == "gb800solo")
 AM_CONDITIONAL(GB800SE, test "$BOXTYPE" == "gb800se")
 AM_CONDITIONAL(GB800UE, test "$BOXTYPE" == "gb800ue")
@@ -116,6 +120,7 @@ AM_CONDITIONAL(HD1265, test "$BOXTYPE" == "hd1265")
 AM_CONDITIONAL(HD1200, test "$BOXTYPE" == "hd1200")
 AM_CONDITIONAL(HD1100, test "$BOXTYPE" == "hd1100")
 AM_CONDITIONAL(HD500C, test "$BOXTYPE" == "hd500c")
+AM_CONDITIONAL(HD530C, test "$BOXTYPE" == "hd530c")
 AM_CONDITIONAL(PROTEK9900LX, test "$BOXTYPE" == "9900lx")
 AM_CONDITIONAL(ODINM7, test "$BOXTYPE" == odinm7)
 AM_CONDITIONAL(ODINM7S, test "$BOXTYPE" == odinm7s)
@@ -132,7 +137,8 @@ AM_CONDITIONAL(VUSOLO4K, test "$BOXTYPE" == vusolo4k)
 AM_CONDITIONAL(VUDUO2, test "$BOXTYPE" == vuduo2)
 AM_CONDITIONAL(VUZERO, test "$BOXTYPE" == vuzero)
 AM_CONDITIONAL(XP1000, test "$BOXTYPE" == xp1000)
-AM_CONDITIONAL(S7000S, test `echo "$BOXTYPE"` == "7000s")
+AM_CONDITIONAL(S7220S, test `echo "$BOXTYPE"` == "7220s")
+AM_CONDITIONAL(S7225S, test `echo "$BOXTYPE"` == "7225s")
 AM_CONDITIONAL(S7300S, test `echo "$BOXTYPE"` == "7300s")
 AM_CONDITIONAL(S7400S, test `echo "$BOXTYPE"` == "7400s")
 AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
@@ -149,7 +155,11 @@ if test `echo "$BOXTYPE" | cut -b 1-2` == "dm"; then
 	AC_DEFINE(DREAMBOX, 1, [Dreambox hardware])
 fi
 
-AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm800sev2 -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5 -o "$BOXTYPE" == dags7335 -o "$BOXTYPE" == dags7362 -o "$BOXTYPE" == dags7356 -o "$BOXTYPE" == triplex)
+AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm800sev2 -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5 -o "$BOXTYPE" == dags7335 -o "$BOXTYPE" == dags7362 -o "$BOXTYPE" == dags73625 -o "$BOXTYPE" == dags7356 -o "$BOXTYPE" == triplex)
+
+AM_CONDITIONAL(HAVE_ARMV7A, test "$BOXTYPE" == cube)
+AM_CONDITIONAL(HAVE_ARMV7AHF, test "$BOXTYPE" == hd51 -o "$BOXTYPE" == vusolo4k)
+AM_CONDITIONAL(HAVE_CORTEXA9HF, test "$BOXTYPE" == wetekplay -o "$BOXTYPE" == wetekplayplus)
 
 AC_CONFIG_FILES([
 Makefile
@@ -157,6 +167,7 @@ Makefile
 3GModemManager/Makefile
 3GModemManager/src/Makefile
 3GModemManager/src/script/Makefile
+3GModemManager/po/Makefile
 3GModemManager/meta/Makefile
 
 AudioEffect/Makefile
@@ -166,6 +177,7 @@ AudioEffect/po/Makefile
 
 AnimationSetup/Makefile
 AnimationSetup/src/Makefile
+AnimationSetup/po/Makefile
 AnimationSetup/meta/Makefile
 
 Blindscan/Makefile
@@ -181,10 +193,12 @@ BTDevicesManager/po/Makefile
 DLNABrowser/Makefile
 DLNABrowser/src/Makefile
 DLNABrowser/icons/Makefile
+DLNABrowser/po/Makefile
 DLNABrowser/meta/Makefile
 
 DLNAServer/Makefile
 DLNAServer/src/Makefile
+DLNAServer/po/Makefile
 DLNAServer/meta/Makefile
 
 DMBlindscan/Makefile
@@ -200,6 +214,7 @@ FirmwareUpgrade/po/Makefile
 Fempa/Makefile
 Fempa/meta/Makefile
 Fempa/src/Makefile
+Fempa/po/Makefile
 
 FPGAUpgrade/Makefile
 FPGAUpgrade/src/Makefile
@@ -248,9 +263,9 @@ LCD4linux/src/data/Clock6/Makefile
 LCD4linux/src/meteo/Makefile
 LCD4linux/src/renderer/Makefile
 LCD4linux/src/wetter/Makefile
-LCD4linux/src/cube/Makefile
-LCD4linux/src/solo4k/Makefile
-LCD4linux/src/wetek/Makefile
+LCD4linux/src/armv7a/Makefile
+LCD4linux/src/armv7ahf/Makefile
+LCD4linux/src/cortexa9hf/Makefile
 LCD4linux/src/mips/Makefile
 LCD4linux/src/sh4/Makefile
 LCD4linux/meta/Makefile
@@ -298,6 +313,12 @@ TempFanControl/src/Makefile
 TempFanControl/meta/Makefile
 TempFanControl/po/Makefile
 
+TerrestrialScan/Makefile
+TerrestrialScan/images/Makefile
+TerrestrialScan/meta/Makefile
+TerrestrialScan/po/Makefile
+TerrestrialScan/src/Makefile
+
 TransCodingSetup/Makefile
 TransCodingSetup/src/Makefile
 TransCodingSetup/meta/Makefile
@@ -331,6 +352,7 @@ SF8VFDControl/po/Makefile
 StreamTV/Makefile
 StreamTV/src/Makefile
 StreamTV/meta/Makefile
+StreamTV/po/Makefile
 StreamTV/icons/Makefile
 
 VentonFancontrol/Makefile
@@ -377,6 +399,7 @@ SparkVFDControl/po/Makefile
 
 SparkUnionTunerType/Makefile
 SparkUnionTunerType/src/Makefile
+SparkUnionTunerType/po/Makefile
 SparkUnionTunerType/meta/Makefile
 
 ])

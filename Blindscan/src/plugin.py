@@ -23,6 +23,7 @@ from Tools.Directories import resolveFilename
 
 from enigma import eTimer, eDVBFrontendParametersSatellite, eComponentScan, eDVBSatelliteEquipmentControl, eDVBFrontendParametersTerrestrial, eDVBFrontendParametersCable, eConsoleAppContainer, eDVBResourceManager
 
+import os
 from boxbranding import getBoxType, getImageVersion, getImageBuild, getBrandOEM
 versionstring = getImageVersion()
 buildstring = getImageBuild()
@@ -34,10 +35,26 @@ from time import strftime, time
 
 XML_BLINDSCAN_DIR = "/tmp"
 
+# _supportNimType is only used by vuplus hardware
 _supportNimType = { 'AVL1208':'', 'AVL6222':'6222_', 'AVL6211':'6211_', 'BCM7356':'bcm7346_'}
 
 # For STBs that support multiple DVB-S tuner models, e.g. Solo 4K.
 _unsupportedNims = ( 'Vuplus DVB-S NIM(7376 FBC)', ) # format = nim.description from nimmanager
+
+# blindscan-s2 supported tuners
+_blindscans2Nims = ('TBS-5925', 'DVBS2BOX')
+
+#used for blindscan-s2
+def getAdapterFrontend(frontend, description):
+	for adapter in range(1,5):
+		try:
+			product = open("/sys/class/dvb/dvb%d.frontend0/device/product" % adapter).read()
+			if description in product:
+				return " -a %d" % adapter
+		except:
+			break
+	return " -f %d" % frontend
+
 
 class Blindscan(ConfigListScreen, Screen):
 	def __init__(self, session):
@@ -58,16 +75,42 @@ class Blindscan(ConfigListScreen, Screen):
 		# update sat list
 		self.satList = []
 		for slot in nimmanager.nim_slots:
-			if slot.isCompatible("DVB-S"):
+			if slot.canBeCompatible("DVB-S"):
 				self.satList.append(nimmanager.getSatListForNim(slot.slot))
 			else:
 				self.satList.append(None)
 
 		# make config
+		self.legacy = True
+		for slot in nimmanager.nim_slots:
+			if slot.canBeCompatible("DVB-S"):
+				try:
+					slot.config.dvbs
+					self.legacy = False
+				except:
+					self.legacy = True
+				break
 		self.createConfig()
 
 		self.list = []
 		self.status = ""
+
+		self.blindscan_session = None
+		self.is_circular_band_scan = False
+		self.is_c_band_scan = False
+		self.tmpstr = ""
+		self.Sundtek_pol = ""
+		self.Sundtek_band = ""
+		self.SundtekScan = False
+		self.offset = 0
+		self.start_time = time()
+		self.orb_pos = 0
+		self.tunerEntry = None
+
+		# run command
+		self.cmd = ""
+		self.bsTimer = eTimer()
+		self.bsTimer.callback.append(self.asyncBlindScan)
 
 		ConfigListScreen.__init__(self, self.list, session = session, on_change = self.changedEntry)
 		if self.scan_nims.value != None and self.scan_nims.value != "" :
@@ -146,7 +189,7 @@ class Blindscan(ConfigListScreen, Screen):
 					_nimSocket[sNo] = [sName, sI2C]
 				else:	_nimSocket[sNo] = [sName]
 		fp.close()
-		print "parsed nimsocket :", _nimSocket
+		print "[Blindscan][ScanNimsocket] parsed nimsocket :", _nimSocket
 		return _nimSocket
 
 	def makeNimSocket(self, nimname=""):
@@ -159,7 +202,7 @@ class Blindscan(ConfigListScreen, Screen):
 					try:	self.i2c_mapping_table[int(XX)] = int(nimsocket[1])
 					except: continue
 					is_exist_i2c = True
-		print "i2c_mapping_table :", self.i2c_mapping_table, ", is_exist_i2c :", is_exist_i2c
+		print "[Blindscan][makeNimSocket] i2c_mapping_table :", self.i2c_mapping_table, ", is_exist_i2c :", is_exist_i2c
 		if is_exist_i2c: return
 
 		if nimname == "AVL6222":
@@ -176,7 +219,9 @@ class Blindscan(ConfigListScreen, Screen):
 		else:	self.i2c_mapping_table = {0:2, 1:3, 2:1, 3:0}
 
 	def getNimSocket(self, slot_number):
-		if slot_number < 0 or slot_number > 3:
+		print "[Blindscan][getNimSocket] slot_number", slot_number
+		if slot_number not in self.i2c_mapping_table:
+			print "[Blindscan][getNimSocket] slot_number not in i2c_mapping_table"
 			return -1
 		return self.i2c_mapping_table[slot_number]
 
@@ -195,17 +240,15 @@ class Blindscan(ConfigListScreen, Screen):
 				if self.frontend:
 					return True
 				else:
-					print "getFrontend failed"
+					print "[Blindscan][openFrontend] getFrontend failed"
 			else:
-				print "getRawChannel failed"
+				print "[Blindscan][openFrontend] getRawChannel failed"
 		else:
-			print "getResourceManager instance failed"
+			print "[Blindscan][openFrontend] getResourceManager instance failed"
 		return False
 		
 	def prepareFrontend(self):
-		self.frontend = None
-		if hasattr(self, 'raw_channel'):
-			del self.raw_channel
+		self.releaseFrontend()
 		if not self.openFrontend():
 			self.oldref = self.session.nav.getCurrentlyPlayingServiceReference()
 			self.session.nav.stopService()
@@ -214,7 +257,7 @@ class Blindscan(ConfigListScreen, Screen):
 					self.session.pipshown = False
 					del self.session.pip
 					self.openFrontend()
-		print 'self.frontend:',self.frontend
+		print '[Blindscan] self.frontend:',self.frontend
 		if self.frontend == None:
 			self.session.open(MessageBox, _("Sorry, this tuner is in use."), MessageBox.TYPE_ERROR)
 			return False
@@ -265,10 +308,13 @@ class Blindscan(ConfigListScreen, Screen):
 
 		self.blindscan_Ku_band_start_frequency = ConfigInteger(default = 10700, limits = (10700, 12749))
 		self.blindscan_Ku_band_stop_frequency = ConfigInteger(default = 12750, limits = (10701, 12750))
+		self.blindscan_circular_band_start_frequency = ConfigInteger(default = 11700, limits = (11700, 12749))
+		self.blindscan_circular_band_stop_frequency = ConfigInteger(default = 12750, limits = (11701, 12750))
 		self.blindscan_C_band_start_frequency = ConfigInteger(default = 3600, limits = (3000, 4199))
 		self.blindscan_C_band_stop_frequency = ConfigInteger(default = 4200, limits = (3001, 4200))
 		self.blindscan_start_symbol = ConfigInteger(default = 2, limits = (1, 44))
 		self.blindscan_stop_symbol = ConfigInteger(default = 45, limits = (2, 45))
+		self.blindscan_step_mhz_tbs5925 = ConfigInteger(default = 10, limits = (1, 20))
 		self.scan_clearallservices = ConfigYesNo(default = False)
 		self.scan_onlyfree = ConfigYesNo(default = False)
 		self.dont_scan_known_tps = ConfigYesNo(default = False)
@@ -285,17 +331,25 @@ class Blindscan(ConfigListScreen, Screen):
 		# collect all nims which are *not* set to "nothing"
 		nim_list = []
 		for n in nimmanager.nim_slots:
-			if n.config_mode == "nothing":
+			if not n.isCompatible("DVB-S"):
 				continue
-			if n.isCompatible("DVB-S") and len(nimmanager.getSatListForNim(n.slot)) < 1: # empty setup
+			if not self.legacy:
+				config = n.config.dvbs
+			else:
+				config = n.config
+			config_mode = config.configMode.value
+
+			if config_mode == "nothing":
 				continue
-			if n.isCompatible("DVB-S") and n.description in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
+			if n.canBeCompatible("DVB-S") and len(nimmanager.getSatListForNim(n.slot)) < 1: # empty setup
 				continue
-			if n.config_mode in ("loopthrough", "satposdepends"):
-				root_id = nimmanager.sec.getRoot(n.slot_id, int(n.config.connectedTo.value))
+			if n.canBeCompatible("DVB-S") and n.description in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
+				continue
+			if config_mode in ("loopthrough", "satposdepends"):
+				root_id = nimmanager.sec.getRoot(n.slot_id, int(config.connectedTo.value))
 				if n.type == nimmanager.nim_slots[root_id].type: # check if connected from a DVB-S to DVB-S2 Nim or vice versa
 					continue
-			if n.isCompatible("DVB-S"):
+			if n.canBeCompatible("DVB-S"):
 				nim_list.append((str(n.slot), n.friendly_full_description))
 		self.scan_nims = ConfigSelection(choices = nim_list)
 
@@ -314,7 +368,7 @@ class Blindscan(ConfigListScreen, Screen):
 
 		self.scan_satselection = []
 		for slot in nimmanager.nim_slots:
-			if slot.isCompatible("DVB-S"):
+			if slot.canBeCompatible("DVB-S"):
 				self.scan_satselection.append(getConfigSatlist(defaultSat["orbpos"], self.satList[slot.slot]))
 		self.frontend = None # set for later use
 		return True
@@ -334,30 +388,44 @@ class Blindscan(ConfigListScreen, Screen):
 		self.list = []
 		self.multiscanlist = []
 		index_to_scan = int(self.scan_nims.value)
-		print "ID: ", index_to_scan
-
-		self.tunerEntry = getConfigListEntry(_("Tuner"), self.scan_nims,_('Select a tuner that is configured for the satellite you wish to search'))
-		self.list.append(self.tunerEntry)
+		print "[Blindscan][createSetup] ID: ", index_to_scan
 
 		if self.scan_nims == [ ]:
 			return
 
+		warning_text = ""
+		nim = nimmanager.nim_slots[index_to_scan]
+		nimname = nim.friendly_full_description
+
+		self.SundtekScan = "Sundtek DVB-S/S2" in nimname and "V" in nimname
+		if brandoem == 'vuplus' and "AVL6222" in nimname:
+			warning_text = _("\nSecond slot dual tuner may not be supported blind scan.")
+		elif self.SundtekScan:
+			warning_text = _("\nYou must use the power adapter.")
+
+		self.tunerEntry = getConfigListEntry(_("Tuner"), self.scan_nims,(_('Select a tuner that is configured for the satellite you wish to search') + warning_text))
+		self.list.append(self.tunerEntry)
+
 		self.systemEntry = None
 		self.modulationEntry = None
 		self.satelliteEntry = None
-		nim = nimmanager.nim_slots[index_to_scan]
 
 		self.scan_networkScan.value = False
-		if nim.isCompatible("DVB-S") : 
+		if nim.canBeCompatible("DVB-S") :
 			self.satelliteEntry = getConfigListEntry(_('Satellite'), self.scan_satselection[self.getSelectedSatIndex(index_to_scan)],_('Select the satellite you wish to search'))
 			self.list.append(self.satelliteEntry)
 			self.SatBandCheck()
 			if self.is_c_band_scan :
 				self.list.append(getConfigListEntry(_('Scan start frequency'), self.blindscan_C_band_start_frequency,_('Frequency values must be between 3000 MHz and 4199 MHz (C-band)')))
 				self.list.append(getConfigListEntry(_('Scan stop frequency'), self.blindscan_C_band_stop_frequency,_('Frequency values must be between 3001 MHz and 4200 MHz (C-band)')))
-			else:
+			elif self.is_circular_band_scan:
+				self.list.append(getConfigListEntry(_('Scan start frequency'), self.blindscan_circular_band_start_frequency,_('Frequency values must be between 117000 MHz and 12749 MHz (Circular-band)')))
+				self.list.append(getConfigListEntry(_('Scan stop frequency'), self.blindscan_circular_band_stop_frequency,_('Frequency values must be between 11701 MHz and 12750 MHz (Circular-band)')))
+			elif self.is_Ku_band_scan:
 				self.list.append(getConfigListEntry(_('Scan start frequency'), self.blindscan_Ku_band_start_frequency,_('Frequency values must be between 10700 MHz and 12749 MHz')))
 				self.list.append(getConfigListEntry(_('Scan stop frequency'), self.blindscan_Ku_band_stop_frequency,_('Frequency values must be between 10701 MHz and 12750 MHz')))
+			if nim.description == 'TBS-5925':
+				self.list.append(getConfigListEntry(_("Scan Step in MHz(TBS5925)"), self.blindscan_step_mhz_tbs5925,_('Smaller steps takes longer but scan is more thorough')))
 			self.list.append(getConfigListEntry(_("Polarisation"), self.scan_sat.polarization,_('The suggested polarisation for this satellite is "%s"') % (self.suggestedPolarisation)))
 			self.list.append(getConfigListEntry(_('Scan start symbolrate'), self.blindscan_start_symbol,_('Symbol rate values are in megasymbols; enter a value between 1 and 44')))
 			self.list.append(getConfigListEntry(_('Scan stop symbolrate'), self.blindscan_stop_symbol,_('Symbol rate values are in megasymbols; enter a value between 2 and 45')))
@@ -372,9 +440,8 @@ class Blindscan(ConfigListScreen, Screen):
 
 	def newConfig(self):
 		cur = self["config"].getCurrent()
-		print "cur is", cur
-		if cur == self.tunerEntry or \
-			cur == self.satelliteEntry:
+		print "[Blindscan][newConfig] cur is", cur
+		if cur and (cur == self.tunerEntry or cur == self.satelliteEntry):
 			self.createSetup()
 
 	def keyLeft(self):
@@ -386,12 +453,16 @@ class Blindscan(ConfigListScreen, Screen):
 		self.newConfig()
 
 	def keyCancel(self):
+		self.releaseFrontend()
 		self.session.nav.playService(self.session.postScanService)
 		for x in self["config"].list:
 			x[1].cancel()
 		self.close()
 
 	def keyGo(self):
+		print "[Blindscan][keyGo] started"
+		self.start_time = time()
+		self.tp_found = []
 
 		tab_pol = {
 			eDVBFrontendParametersSatellite.Polarisation_Horizontal : "horizontal",
@@ -408,28 +479,37 @@ class Blindscan(ConfigListScreen, Screen):
 		idx_selected_sat = int(self.getSelectedSatIndex(self.scan_nims.value))
 		tmp_list=[self.satList[int(self.scan_nims.value)][self.scan_satselection[idx_selected_sat].index]]
 
-		if self.is_c_band_scan :
+		if self.is_c_band_scan:
 			self.blindscan_start_frequency = self.blindscan_C_band_start_frequency
 			self.blindscan_stop_frequency = self.blindscan_C_band_stop_frequency
-		else :
+		elif self.is_circular_band_scan:
+			self.blindscan_start_frequency = self.blindscan_circular_band_start_frequency
+			self.blindscan_stop_frequency = self.blindscan_circular_band_stop_frequency
+		else:
 			self.blindscan_start_frequency = self.blindscan_Ku_band_start_frequency
 			self.blindscan_stop_frequency = self.blindscan_Ku_band_stop_frequency
-		
+
 		# swap start and stop values if entered the wrong way round
 		if self.blindscan_start_frequency.value > self.blindscan_stop_frequency.value :
-			temp = self.blindscan_stop_frequency.value 
+			temp = self.blindscan_stop_frequency.value
 			self.blindscan_stop_frequency.value = self.blindscan_start_frequency.value
 			self.blindscan_start_frequency.value = temp
 			del temp
-						
+
 		# swap start and stop values if entered the wrong way round
 		if self.blindscan_start_symbol.value > self.blindscan_stop_symbol.value :
-			temp = self.blindscan_stop_symbol.value 
+			temp = self.blindscan_stop_symbol.value
 			self.blindscan_stop_symbol.value = self.blindscan_start_symbol.value
 			self.blindscan_start_symbol.value = temp
 			del temp
-			
-		uni_lnb_cutoff = 11700
+
+		if self.is_circular_band_scan and self.blindscan_circular_band_start_frequency.value > 11699:  #10750 l.o. Needs to start 150 MHz lower
+			self.blindscan_circular_band_start_frequency.value = self.blindscan_circular_band_start_frequency.value - 150
+
+		if self.is_circular_band_scan:
+			uni_lnb_cutoff = 11550  #10750 l.o. Needs to start 150 MHz lower
+		else:
+			uni_lnb_cutoff = 11700
 		if self.blindscan_start_frequency.value < uni_lnb_cutoff and self.blindscan_stop_frequency.value > uni_lnb_cutoff :
 			tmp_band=["low","high"]
 		elif self.blindscan_start_frequency.value < uni_lnb_cutoff :
@@ -450,6 +530,7 @@ class Blindscan(ConfigListScreen, Screen):
 
 
 	def doRun(self, tmp_list, tmp_pol, tmp_band):
+		print "[Blindscan][doRun] started"
 		def GetCommand(nimIdx):
 			_nimSocket = self.nimSockets
 			try:
@@ -458,13 +539,13 @@ class Blindscan(ConfigListScreen, Screen):
 				return "vuplus_%(TYPE)sblindscan"%{'TYPE':sType}, sName
 			except: pass
 			return "vuplus_blindscan", ""
-		if brandoem == 'vuplus':
+		if brandoem == 'vuplus' and not self.SundtekScan:
 			self.binName,nimName =  GetCommand(self.scan_nims.value)
 
 			self.makeNimSocket(nimName)
 			if self.binName is None:
 				self.session.open(MessageBox, "Blindscan is not supported in " + nimName + " tuner.", MessageBox.TYPE_ERROR)
-				print nimName + " does not support blindscan."
+				print "[Blindscan][doRun] " + nimName + " does not support blindscan."
 				return
 
 		self.full_data = ""
@@ -473,23 +554,35 @@ class Blindscan(ConfigListScreen, Screen):
 			for y in tmp_pol:
 				for z in tmp_band:
 					self.total_list.append([x,y,z])
-					print "add scan item : ", x, ", ", y, ", ", z
+					print "[Blindscan][doRun] add scan item : ", x, ", ", y, ", ", z
 
 		self.max_count = len(self.total_list)
 		self.is_runable = True
 		self.running_count = 0
 		self.clockTimer = eTimer()
 		self.clockTimer.callback.append(self.doClock)
-		self.clockTimer.start(1000)
+		if self.SundtekScan:
+			if self.clockTimer:
+				self.clockTimer.stop()
+				del self.clockTimer
+				self.clockTimer = None
+			orb = self.total_list[self.running_count][0]
+			pol = self.total_list[self.running_count][1]
+			band = self.total_list[self.running_count][2]
+			self.prepareScanData(orb, pol, band, True)
+		else:
+			self.clockTimer.start(1000)
 
 	def doClock(self):
+		print "[Blindscan][doClock] started"
 		is_scan = False
+		print "[Blindscan][doClock] self.is_runable", self.is_runable
 		if self.is_runable :
 			if self.running_count >= self.max_count:
 				self.clockTimer.stop()
 				del self.clockTimer
 				self.clockTimer = None
-				print "Done"
+				print "[Blindscan] Done"
 				return
 			orb = self.total_list[self.running_count][0]
 			pol = self.total_list[self.running_count][1]
@@ -501,6 +594,7 @@ class Blindscan(ConfigListScreen, Screen):
 			self.prepareScanData(orb, pol, band, is_scan)
 
 	def prepareScanData(self, orb, pol, band, is_scan):
+		print "[Blindscan][prepareScanData] started"
 		self.is_runable = False
 		self.orb_position = orb[0]
 		self.sat_name = orb[1]
@@ -516,6 +610,7 @@ class Blindscan(ConfigListScreen, Screen):
 		returnvalue = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 		if not self.prepareFrontend():
+			print "[Blindscan][prepareScanData] self.prepareFrontend() failed (in prepareScanData)"
 			return False
 
 		if self.is_c_band_scan :
@@ -537,13 +632,17 @@ class Blindscan(ConfigListScreen, Screen):
 					 0)
 		self.tuner.tune(returnvalue)
 
-		if self.getNimSocket(self.feid) < 0:
-			print "can't find i2c number!!"
+		nim = nimmanager.nim_slots[self.feid]
+		tunername = nim.description
+		if not self.SundtekScan and tunername not in _blindscans2Nims and self.getNimSocket(self.feid) < 0:
+			print "[Blindscan][prepareScanData] can't find i2c number!!"
 			return
 
 		c_band_loc_osc = 5150
 		uni_lnb_loc_osc = {"high" : 10600, "low" : 9750}
 		uni_lnb_cutoff = 11700
+		if self.is_circular_band_scan:
+			uni_lnb_cutoff = 11550
 		if self.is_c_band_scan :
 			temp_start_int_freq = c_band_loc_osc - self.blindscan_stop_frequency.value
 			temp_end_int_freq = c_band_loc_osc - self.blindscan_start_frequency.value
@@ -565,8 +664,41 @@ class Blindscan(ConfigListScreen, Screen):
 				temp_start_int_freq = self.blindscan_start_frequency.value - uni_lnb_loc_osc[band]
 			status_box_start_freq = temp_start_int_freq + uni_lnb_loc_osc[band]
 			status_box_end_freq = temp_end_int_freq + uni_lnb_loc_osc[band]
-			
-		if brandoem == 'ini' or brandoem == 'home':
+
+		cmd = ""
+		self.cmd = ""
+		self.tmpstr = ""
+
+		if tunername in _blindscans2Nims:
+			if tunername == "TBS-5925":
+				cmd = "blindscan-s2 -b -s %d -e %d -t %d" % (temp_start_int_freq, temp_end_int_freq, self.blindscan_step_mhz_tbs5925.value)
+			else:
+				cmd = "blindscan-s2 -b -s %d -e %d" % (temp_start_int_freq, temp_end_int_freq)
+			cmd += getAdapterFrontend(self.feid, tunername)
+			if pol == "horizontal":
+				cmd += " -H"
+			elif pol == "vertical":
+				cmd += " -V"
+			if self.is_c_band_scan:
+				cmd += " -l 5150" # tested by el bandito with TBS-5925 and working
+			elif tab_hilow[band]:
+				cmd += " -l 10600 -2" # on high band enable 22KHz tone
+			else:
+				cmd += " -l 9750"
+			#self.frontend and self.frontend.closeFrontend() # close because blindscan-s2 does not like to be open
+			self.cmd = cmd
+			self.bsTimer.stop()
+			self.bsTimer.start(6000, True)
+		elif self.SundtekScan:
+			tools = "/opt/bin/mediaclient"
+			if os.path.exists(tools):
+				cmd = "%s --blindscan %d" % (tools, self.feid)
+				if self.is_c_band_scan:
+					cmd += " --band c"
+			else:
+				self.session.open(MessageBox, _("Not found blind scan utility '%s'!") % tools, MessageBox.TYPE_ERROR)
+				return
+		elif brandoem == 'ini' or brandoem == 'home':
 			cmd = "ini_blindscan %d %d %d %d %d %d %d %d" % (temp_start_int_freq, temp_end_int_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid)) 
 		elif brandoem == 'vuplus':
 			try:
@@ -592,17 +724,20 @@ class Blindscan(ConfigListScreen, Screen):
 				cmd += " --cband"
 			elif tab_hilow[band]:
 				cmd += " --high"
-		print "prepared command : [%s]" % (cmd)
+		print "[Blindscan][prepareScanData] prepared command : [%s]" % (cmd)
 
 		self.thisRun = [] # used to check result corresponds with values used above
 		self.thisRun.append(int(temp_start_int_freq))
 		self.thisRun.append(int(temp_end_int_freq))
 		self.thisRun.append(int(tab_hilow[band]))
 
-		self.blindscan_container = eConsoleAppContainer()
-		self.blindscan_container.appClosed.append(self.blindscanContainerClose)
-		self.blindscan_container.dataAvail.append(self.blindscanContainerAvail)
-		self.blindscan_container.execute(cmd)
+		if not self.cmd:
+			if self.SundtekScan:
+				self.frontend and self.frontend.closeFrontend()
+			self.blindscan_container = eConsoleAppContainer()
+			self.blindscan_container.appClosed.append(self.blindscanContainerClose)
+			self.blindscan_container.dataAvail.append(self.blindscanContainerAvail)
+			self.blindscan_container.execute(cmd)
 
 		display_pol = pol # Display the correct polarisation in the MessageBox below
 		if self.scan_sat.polarization.value == eDVBFrontendParametersSatellite.Polarisation_CircularRight :
@@ -614,33 +749,123 @@ class Blindscan(ConfigListScreen, Screen):
 				display_pol = _("circular left")
 			else:
 				display_pol = _("circular right")
+		if display_pol == "horizontal":
+			display_pol = _("horizontal")
+		if display_pol == "vertical":
+			display_pol = _("vertical")
+		if self.is_circular_band_scan and status_box_start_freq < 11700:
+			status_box_start_freq = 11700
 
-		tmpmes = _("Current Status : %d/%d\n   Satellite : %s\n   Polarization : %s\n   Frequency range : %d - %d MHz\n   Symbol rates : %d - %d MHz") %(self.running_count, self.max_count, orb[1], display_pol, status_box_start_freq, status_box_end_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value)
+		if self.SundtekScan:
+			tmpmes = _("   Starting Sundtek hardware blind scan.")
+		else:
+			tmpmes = _("Current Status : %d/%d\n   Satellite : %s\n   Polarization : %s\n   Frequency range : %d - %d MHz\n   Symbol rates : %d - %d MHz") %(self.running_count, self.max_count, orb[1], display_pol, status_box_start_freq, status_box_end_freq, self.blindscan_start_symbol.value, self.blindscan_stop_symbol.value)
 		if boxtype == ('vusolo2'):
 			tmpmes2 = _("Looking for available transponders.\nThis will take a long time, please be patient.")
 		else:
 			tmpmes2 = _("Looking for available transponders.\nThis will take a short while.")
 		tmpstr = tmpmes + '\n\n' + tmpmes2 + '\n\n'
+		self.tmpstr = tmpmes
 		if is_scan :
 			self.blindscan_session = self.session.openWithCallback(self.blindscanSessionClose, MessageBox, tmpstr, MessageBox.TYPE_INFO)
 		else:
 			self.blindscan_session = self.session.openWithCallback(self.blindscanSessionNone, MessageBox, tmpstr, MessageBox.TYPE_INFO)
 
+	def dataSundtekIsGood(self, data):
+		add_tp = False
+		pol = self.scan_sat.polarization.value
+		if pol == eDVBFrontendParametersSatellite.Polarisation_CircularRight + 1 or pol == eDVBFrontendParametersSatellite.Polarisation_CircularRight + 2:
+			add_tp = True
+		elif self.Sundtek_pol in (1, 3) and (pol == eDVBFrontendParametersSatellite.Polarisation_Vertical or pol == eDVBFrontendParametersSatellite.Polarisation_CircularRight):
+			add_tp = True
+		elif self.Sundtek_pol in (0, 2) and (pol == eDVBFrontendParametersSatellite.Polarisation_Horizontal or pol == eDVBFrontendParametersSatellite.Polarisation_CircularLeft):
+			add_tp = True
+		if add_tp:
+			if data[2].isdigit() and data[3].isdigit():
+				freq = (int(data[2]) + self.offset) / 1000
+				symbolrate = int(data[3])
+			else:
+				return False
+			if freq >= self.blindscan_start_frequency.value and freq <= self.blindscan_stop_frequency.value and symbolrate >= self.blindscan_start_symbol.value * 1000 and symbolrate <= self.blindscan_stop_symbol.value * 1000:
+				add_tp = True
+			else:
+				add_tp = False
+		if add_tp:
+			if self.is_c_band_scan:
+				if freq > 2999 and freq < 4201:
+					add_tp = True
+				else:
+					add_tp = False
+			else:
+				if freq < 12751 and freq > 10700:
+					add_tp = True
+				else:
+					add_tp = False
+		return add_tp
+
 	def blindscanContainerClose(self, retval):
+		self.Sundtek_pol = ""
+		self.Sundtek_band = ""
+		self.offset = 0
 		lines = self.full_data.split('\n')
 		self.full_data = "" # Clear this string so we don't get duplicates on subsequent runs
 		for line in lines:
 			data = line.split()
-			print "cnt :", len(data), ", data :", data
-			if len(data) >= 10 and self.dataIsGood(data) :
+			print "[Blindscan][blindscanContainerClose] cnt :", len(data), ", data :", data
+			if self.SundtekScan:
+				if len(data) == 3 and data[0] == 'Scanning':
+					if data[1] == '13V':
+						self.Sundtek_pol = 1
+						if self.is_circular_band_scan or self.is_c_band_scan:
+							self.Sundtek_pol = 3
+					elif data[1] == '18V':
+						self.Sundtek_pol = 0
+						if self.is_circular_band_scan or self.is_c_band_scan:
+							self.Sundtek_pol = 2
+					if data[2] == 'Highband':
+						self.Sundtek_band = "nigh"
+					elif data[2] == 'Lowband':
+						self.Sundtek_band = "low"
+					self.offset = 0
+					if self.is_c_band_scan:
+						self.offset = 5150000
+					elif self.is_circular_band_scan:
+						self.offset = 10750000
+					else:
+						if self.Sundtek_band == "nigh":
+							self.offset = 10600000
+						elif self.Sundtek_band == "low":
+							self.offset = 9750000
+				if len(data) >= 6 and data[0] == 'OK' and self.Sundtek_pol != "" and self.offset and self.dataSundtekIsGood(data):
+					parm = eDVBFrontendParametersSatellite()
+					sys = { "DVB-S" : parm.System_DVB_S,
+						"DVB-S2" : parm.System_DVB_S2}
+					qam = { "QPSK" : parm.Modulation_QPSK,
+						"8PSK" : parm.Modulation_8PSK,
+						"16APSK" : parm.Modulation_16APSK,
+						"32APSK" : parm.Modulation_32APSK}
+					parm.orbital_position = self.orb_position
+					parm.polarisation = self.Sundtek_pol
+					frequency = ((int(data[2]) + self.offset) / 1000) * 1000
+					parm.frequency = frequency
+					symbol_rate = int(data[3]) * 1000
+					parm.symbol_rate = symbol_rate
+					parm.system = sys[data[1]]
+					parm.inversion = parm.Inversion_Off
+					parm.pilot = parm.Pilot_Off
+					parm.fec = parm.FEC_Auto
+					parm.modulation = qam[data[4]]
+					parm.rolloff = parm.RollOff_alpha_0_35
+					self.tmp_tplist.append(parm)
+			elif len(data) >= 10 and self.dataIsGood(data):
 				if data[0] == 'OK':
 					parm = eDVBFrontendParametersSatellite()
-					sys = { "DVB-S" : eDVBFrontendParametersSatellite.System_DVB_S,
-						"DVB-S2" : eDVBFrontendParametersSatellite.System_DVB_S2}
+					sys = { "DVB-S" : parm.System_DVB_S,
+						"DVB-S2" : parm.System_DVB_S2}
 					qam = { "QPSK" : parm.Modulation_QPSK,
-								"8PSK" : parm.Modulation_8PSK,
-								"16APSK" : parm.Modulation_16APSK,
-								"32APSK" : parm.Modulation_32APSK}
+						"8PSK" : parm.Modulation_8PSK,
+						"16APSK" : parm.Modulation_16APSK,
+						"32APSK" : parm.Modulation_32APSK}
 					inv = { "INVERSION_OFF" : parm.Inversion_Off,
 						"INVERSION_ON" : parm.Inversion_On,
 						"INVERSION_AUTO" : parm.Inversion_Unknown}
@@ -657,11 +882,14 @@ class Blindscan(ConfigListScreen, Screen):
 						"FEC_NONE" : parm.FEC_None}
 					roll ={ "ROLLOFF_20" : parm.RollOff_alpha_0_20,
 						"ROLLOFF_25" : parm.RollOff_alpha_0_25,
-						"ROLLOFF_35" : parm.RollOff_alpha_0_35}
+						"ROLLOFF_35" : parm.RollOff_alpha_0_35,
+						"ROLLOFF_AUTO" : parm.RollOff_auto}
 					pilot={ "PILOT_ON" : parm.Pilot_On,
 						"PILOT_OFF" : parm.Pilot_Off,
 						"PILOT_AUTO" : parm.Pilot_Unknown}
-					pol = {	"HORIZONTAL" : parm.Polarisation_Horizontal,
+					pol = { "HORIZONTAL" : parm.Polarisation_Horizontal,
+						"CIRCULARRIGHT" : parm.Polarisation_CircularRight,
+						"CIRCULARLEFT" : parm.Polarisation_CircularLeft,
 						"VERTICAL" : parm.Polarisation_Vertical}
 					parm.orbital_position = self.orb_position
 					if brandoem == 'azbox':
@@ -678,11 +906,43 @@ class Blindscan(ConfigListScreen, Screen):
 					parm.rolloff = roll[data[9]]
 					self.tmp_tplist.append(parm)
 		self.blindscan_session.close(True)
+		self.blindscan_session = None
 
 	def blindscanContainerAvail(self, str):
-		print str
-		#if str.startswith("OK"):
+		print "[Blindscan][blindscanContainerAvail]", str
 		self.full_data = self.full_data + str
+		if self.blindscan_session:
+			tmpstr = ""
+			data = str.split()
+			if self.SundtekScan:
+				if len(data) == 3 and data[0] == 'Scanning':
+					if data[1] == '13V':
+						self.Sundtek_pol = "V"
+						if self.is_circular_band_scan:
+							self.Sundtek_pol = "R"
+					elif data[1] == '18V':
+						self.Sundtek_pol = "H"
+						if self.is_circular_band_scan:
+							self.Sundtek_pol = "L"
+					if data[2] == 'Highband':
+						self.Sundtek_band = "nigh"
+					elif data[2] == 'Lowband':
+						self.Sundtek_band = "low"
+					self.offset = 0
+					if self.is_c_band_scan:
+						self.offset = 5150000
+					elif self.is_circular_band_scan:
+						self.offset = 10750000
+					else:
+						if self.Sundtek_band == "nigh":
+							self.offset = 10600000
+						elif self.Sundtek_band == "low":
+							self.offset = 9750000
+					self.tp_found.append(str)
+					seconds_done = int(time() - self.start_time)
+					tmpstr += '\n'
+					tmpstr += _("Step %d %d:%02d min") %(len(self.tp_found),seconds_done / 60, seconds_done % 60)
+					self.blindscan_session["text"].setText(self.tmpstr + tmpstr)
 
 	def blindscanSessionNone(self, *val):
 		import time
@@ -690,6 +950,7 @@ class Blindscan(ConfigListScreen, Screen):
 		self.blindscan_container = None
 		time.sleep(2)
 
+		self.blindscan_session = None
 		self.releaseFrontend()
 
 		if val[0] == False:
@@ -698,12 +959,26 @@ class Blindscan(ConfigListScreen, Screen):
 
 		self.is_runable = True
 
+	def asyncBlindScan(self):
+		self.bsTimer.stop()
+		if not self.frontend:
+			return
+		print "[Blindscan][asyncBlindScan] closing frontend and starting blindscan"
+		self.frontend.closeFrontend() # close because blindscan-s2 does not like to be open
+		self.blindscan_container = eConsoleAppContainer()
+		self.blindscan_container.appClosed.append(self.blindscanContainerClose)
+		self.blindscan_container.dataAvail.append(self.blindscanContainerAvail)
+		self.blindscan_container.execute(self.cmd)
 
 	def blindscanSessionClose(self, *val):
 		self.blindscanSessionNone(val[0])
 
+ 		if self.SundtekScan:
+			self.frontend and self.frontend.closeFrontend()
+
 		if self.tmp_tplist != None and self.tmp_tplist != []:
-			self.tmp_tplist = self.correctBugsCausedByDriver(self.tmp_tplist)
+			if not self.SundtekScan:
+				self.tmp_tplist = self.correctBugsCausedByDriver(self.tmp_tplist)
 
 			# Sync with or remove transponders that exist in satellites.xml
 			self.known_transponders = self.getKnownTransponders(self.orb_position)
@@ -719,7 +994,7 @@ class Blindscan(ConfigListScreen, Screen):
 			# Process transponders still in list
 			if self.tmp_tplist != [] :
 				for p in self.tmp_tplist:
-					print "data : [%d][%d][%d][%d][%d][%d][%d][%d][%d][%d]" % (p.orbital_position, p.polarisation, p.frequency, p.symbol_rate, p.system, p.inversion, p.pilot, p.fec, p.modulation, p.modulation)
+					print "[Blindscan][blindscanSessionClose] data : [%d][%d][%d][%d][%d][%d][%d][%d][%d][%d]" % (p.orbital_position, p.polarisation, p.frequency, p.symbol_rate, p.system, p.inversion, p.pilot, p.fec, p.modulation, p.modulation)
 
 				self.tmp_tplist = sorted(self.tmp_tplist, key=lambda transponder: transponder.frequency)
 				xml_location = self.createSatellitesXMLfile(self.tmp_tplist, XML_BLINDSCAN_DIR)
@@ -780,7 +1055,7 @@ class Blindscan(ConfigListScreen, Screen):
 					abs(t.frequency - k.frequency) < (tolerance*multiplier) and \
 					abs(t.symbol_rate - k.symbol_rate) < (tolerance*multiplier) :
 					tplist[x] = k
-					break
+					#break
 			x += 1
 		tplist = self.removeDuplicateTransponders(tplist)
 		return tplist
@@ -804,7 +1079,7 @@ class Blindscan(ConfigListScreen, Screen):
 					abs(t.frequency - k.frequency) < (tolerance*multiplier) and \
 					abs(t.symbol_rate - k.symbol_rate) < (tolerance*multiplier) :
 					isnt_known = False
-					break
+					#break
 			x += 1
 			if isnt_known :
 				new_tplist.append(t)
@@ -828,6 +1103,11 @@ class Blindscan(ConfigListScreen, Screen):
 			for transponders in tplist :
 				if tplist[x].frequency > (4200*1000) :
 					tplist[x].frequency = (5150*1000) - (tplist[x].frequency - (9750*1000))
+				x += 1
+		elif self.is_circular_band_scan: # Add Standard 10750 L.O. LNB
+			x = 0
+			for transponders in tplist:
+				tplist[x].frequency = (150*1000) + tplist[x].frequency
 				x += 1
 
 		x = 0
@@ -877,7 +1157,7 @@ class Blindscan(ConfigListScreen, Screen):
 			good = False
 
 		if good == False :
-			print "Data returned by the binary is not good...\n	Data: Frequency [%d], Symbol rate [%d]" % (int(data[2]), int(data[3]))
+			print "[Blindscan][dataIsGood] Data returned by the binary is not good...\n	Data: Frequency [%d], Symbol rate [%d]" % (int(data[2]), int(data[3]))
 
 		return good
 
@@ -926,35 +1206,87 @@ class Blindscan(ConfigListScreen, Screen):
 		freq = 0
 		band = 'Unknown'
 		self.is_c_band_scan = False
+		self.is_circular_band_scan = False
+		self.is_Ku_band_scan = False
+		self.is_user_defined_scan = False
 		self.suggestedPolarisation = _("vertical and horizontal")
-		# check in satellites.xml to work out band
-		tp_list = self.getKnownTransponders(pos)
-		if len(tp_list) :
-			freq = int(tp_list[0].frequency)
-			if int(tp_list[0].polarisation) > 1 : # for hints text
-				self.suggestedPolarisation = _("circular right and circular left")
-		if freq :
-			if freq < 4201000 and freq > 2999000 :
-				band = 'C'
-				self.is_c_band_scan = True
-			elif freq < 12751000 and freq > 10700000 :
-				band = 'Ku'
-		# if satellites.xml didn't contain any entries for this satellite check 
-		# LNB type instead. Assumes the tuner is configured correctly for C-band.
 		if band == "Unknown" and self.isCbandLNB(pos): 
 			band = 'C'
-			self.is_c_band_scan = True 
-		print "SatBandCheck band = %s" % (band)
-		
+			self.is_c_band_scan = True
+		if band == "Unknown" and self.isCircularLNB(pos):
+			band = 'circular'
+			self.is_circular_band_scan = True
+		if band == "Unknown" and self.isKuLNB(pos):
+			band = 'Ku'
+			self.is_Ku_band_scan = True
+		if band == "Unknown" and self.isUserDefinedLNB(pos):
+			band = 'user_defined'
+			self.is_user_defined_scan = True
+		# if satellites.xml didn't contain any entries for this satellite check
+		# LNB type instead. Assumes the tuner is configured correctly for C-band.
+		print "[Blindscan][SatBandCheck] band = %s" % (band)
+
 	def isCbandLNB(self, cur_orb_pos):
 		nim = nimmanager.nim_slots[int(self.scan_nims.value)]
-		if nim.config.configMode.getValue() == "advanced":
-			currSat = nim.config.advanced.sat[cur_orb_pos]
+		if not self.legacy:
+			nimconfig = nim.config.dvbs
+		else:
+			nimconfig = nim.config
+		if nimconfig.configMode.getValue() == "advanced":
+			currSat = nimconfig.advanced.sat[cur_orb_pos]
 			lnbnum = int(currSat.lnb.getValue())
-			currLnb = nim.config.advanced.lnb[lnbnum]
+			currLnb = nimconfig.advanced.lnb[lnbnum]
 			lof = currLnb.lof.getValue()
-			print "LNB type: ", lof
+			print "[Blindscan][isCbandLNB] LNB type: ", lof
 			if lof == "c_band":
+				return True
+		return False
+
+	def isCircularLNB(self, cur_orb_pos):  #added for 10750 LNB
+		nim = nimmanager.nim_slots[int(self.scan_nims.value)]
+		if not self.legacy:
+			nimconfig = nim.config.dvbs
+		else:
+			nimconfig = nim.config
+		if nimconfig.configMode.getValue() == "advanced":
+			currSat = nimconfig.advanced.sat[cur_orb_pos]
+			lnbnum = int(currSat.lnb.getValue())
+			currLnb = nimconfig.advanced.lnb[lnbnum]
+			lof = currLnb.lof.getValue()
+			print "[Blind scan] LNB type: ", lof
+			if lof == "circular_lnb":
+				return True
+		return False
+
+	def isKuLNB(self, cur_orb_pos):  #added for 10750 LNB
+		nim = nimmanager.nim_slots[int(self.scan_nims.value)]
+		if not self.legacy:
+			nimconfig = nim.config.dvbs
+		else:
+			nimconfig = nim.config
+		if nimconfig.configMode.getValue() == "advanced":
+			currSat = nimconfig.advanced.sat[cur_orb_pos]
+			lnbnum = int(currSat.lnb.getValue())
+			currLnb = nimconfig.advanced.lnb[lnbnum]
+			lof = currLnb.lof.getValue()
+			print "[Blind scan] LNB type: ", lof
+			if lof == "universal_lnb":
+				return True
+		return False
+
+	def isUserDefinedLNB(self, cur_orb_pos):  #added for 10750 LNB
+		nim = nimmanager.nim_slots[int(self.scan_nims.value)]
+		if not self.legacy:
+			nimconfig = nim.config.dvbs
+		else:
+			nimconfig = nim.config
+		if nimconfig.configMode.getValue() == "advanced":
+			currSat = nimconfig.advanced.sat[cur_orb_pos]
+			lnbnum = int(currSat.lnb.getValue())
+			currLnb = nimconfig.advanced.lnb[lnbnum]
+			lof = currLnb.lof.getValue()
+			print "[Blind scan] LNB type: ", lof
+			if lof == "user_defined":
 				return True
 		return False
 
@@ -962,14 +1294,15 @@ class Blindscan(ConfigListScreen, Screen):
 		idx_selected_sat = int(self.getSelectedSatIndex(self.scan_nims.value))
 		tmp_list=[self.satList[int(self.scan_nims.value)][self.scan_satselection[idx_selected_sat].index]]
 		orb = tmp_list[0][0]
-		print "orb = ", orb
+		print "[Blindscan][getOrbPos] orb = ", orb
 		return orb
-		
+
 	def startScanCallback(self, answer=True):
 		if answer:
+			self.releaseFrontend()
 			self.session.nav.playService(self.session.postScanService)
 			self.close(True)
-		
+
 	def startDishMovingIfRotorSat(self):
 		orb_pos = self.getOrbPos()
 		self.feid = int(self.scan_nims.value)
@@ -988,16 +1321,19 @@ class Blindscan(ConfigListScreen, Screen):
 		tps = nimmanager.getTransponders(orb_pos)
 		if len(tps) < 1:
 			return False
-		# freq, sr, pol, fec, inv, orb, sys, mod, roll, pilot 
+		# freq, sr, pol, fec, inv, orb, sys, mod, roll, pilot
 		transponder = (tps[0][1] / 1000, tps[0][2] / 1000, tps[0][3], tps[0][4], 2, orb_pos, tps[0][5], tps[0][6], tps[0][8], tps[0][9])
 		if not self.prepareFrontend():
+			print "[Blindscan][startDishMovingIfRotorSat] self.prepareFrontend() failed"
 			return False
 		self.tuner.tune(transponder)
 		return True
 
 	def releaseFrontend(self):
-		if self.frontend:
+		if hasattr(self, 'frontend'):
+			del self.frontend
 			self.frontend = None
+		if hasattr(self, 'raw_channel'):
 			del self.raw_channel
 
 def main(session, close=None, **kwargs):
@@ -1005,13 +1341,13 @@ def main(session, close=None, **kwargs):
 
 def BlindscanSetup(menuid, **kwargs):
 	if menuid == "scan":
-		return [(_("Blind scan"), main, "blindscan", 25, True)]
+		return [(_("Blind scan"), main, "blindscan", 25, False)]
 	else:
 		return []
 
 def Plugins(**kwargs):
 	if nimmanager.hasNimType("DVB-S"):
 		for n in nimmanager.nim_slots:
-			if n.isCompatible("DVB-S") and n.description not in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
+			if n.canBeCompatible("DVB-S") and n.description not in _unsupportedNims: # DVB-S NIMs without blindscan hardware or software
 				return PluginDescriptor(name=_("Blind scan"), description=_("Scan satellites for new transponders"), where = PluginDescriptor.WHERE_MENU, fnc=BlindscanSetup)
 	return []
