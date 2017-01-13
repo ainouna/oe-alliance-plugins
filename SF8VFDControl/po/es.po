@@ -7,34 +7,33 @@ msgstr ""
 "POT-Creation-Date: 2016-05-07 13:51+0200\n"
 "PO-Revision-Date: 2016-05-07 13:51+0200\n"
 "Last-Translator: neoatomic <neoatomic@users.noreply.github.com>\n"
-"Language-Team: none\n"
+"Language-Team: openspa.info\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 1.8.7\n"
-"X-Poedit-SourceCharset: iso-8859-1\n"
 
 #: ../src/plugin.py:56
 msgid "Channelnumber in Standby off"
-msgstr ""
+msgstr "Número Canal, en Reposo Apagado"
 
 #: ../src/plugin.py:56
 msgid "Channelnumber in Standby Clock"
-msgstr ""
+msgstr "Número Canal, en Reposo Reloj"
 
 #: ../src/plugin.py:56
 msgid "Channelnumber/Clock in Standby Clock"
-msgstr ""
+msgstr "Número Canal/Reloj, en Reposo Reloj"
 
 #: ../src/plugin.py:56
 msgid "Clock always"
-msgstr ""
+msgstr "Reloj siempre"
 
 #: ../src/plugin.py:56
 msgid "Always off"
-msgstr ""
+msgstr "Siempre apagado"
 
 #
 #: ../src/plugin.py:249
@@ -48,16 +47,16 @@ msgstr "Guardar"
 
 #: ../src/plugin.py:251
 msgid "Update Date/Time"
-msgstr ""
+msgstr "Actualizar Fecha/Hora"
 
 #: ../src/plugin.py:264 ../src/plugin.py:278
 msgid "Show on VFD"
-msgstr ""
+msgstr "Mostrar en VFD"
 
 #: ../src/plugin.py:266
 msgid "Time mode"
-msgstr ""
+msgstr "Modo Hora"
 
 #: ../src/plugin.py:327
 msgid "VFD_SF8"
-msgstr ""
+msgstr "VFD_SF8"

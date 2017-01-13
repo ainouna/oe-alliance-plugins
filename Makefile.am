@@ -34,6 +34,14 @@ if G100
 SUBDIRS += F3LEDControl
 endif
 
+if G101
+SUBDIRS += F3LEDControl
+endif
+
+if HD51
+SUBDIRS += F3LEDControl
+endif
+
 if HD2400
 SUBDIRS += XtrendFancontrol XtrendRemote MultiTransCodingSetup
 endif
@@ -107,6 +115,10 @@ SUBDIRS += VentonFancontrol MICOMUpgrade HbbTV
 endif
 
 if INIHDP
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if FORMULER1
 SUBDIRS += MultiTransCodingSetup
 endif
 
@@ -198,6 +210,14 @@ if VUSOLO4K
 SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
 endif
 
+if VUUNO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
+endif
+
+if VUULTIMO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
+endif
+
 if GIGABLUE
 SUBDIRS += GigaBlueVFDControl AudioEffect
 endif
@@ -232,6 +252,10 @@ SUBDIRS += HbbTV AudioEffect
 endif
 
 if WETEK
+SUBDIRS += RCUSelect ReZap
+endif
+
+if HARDKERNEL
 SUBDIRS += RCUSelect ReZap
 endif
 
