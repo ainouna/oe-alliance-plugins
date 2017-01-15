@@ -84,7 +84,7 @@ class eAITSectionReader:
 			document = re.sub("&", "+", document)
 			document = document.decode("cp1252").encode("utf-8")
 			document = "<URL>" + document + "</URL>"
-			print "[HBBTV] doOpen", document
+			# print "[HBBTV] doOpen", document
 			try:
 				self.mDocument = xml.dom.minidom.parseString(document)
 			except Exception, ErrMsg:
