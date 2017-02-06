@@ -134,6 +134,10 @@ if FORMULER4TURBO
 SUBDIRS += F3LEDControl
 endif
 
+if TIVIARMIN
+SUBDIRS += F3LEDControl
+endif
+
 if VG2000
 SUBDIRS += F3LEDControl
 endif
@@ -245,6 +249,10 @@ endif
 
 if GB7356
 SUBDIRS += TransCodingSetup
+endif
+
+if VS1000
+SUBDIRS += F3LEDControl XtrendRemote
 endif
 
 if VUPLUS

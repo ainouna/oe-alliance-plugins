@@ -161,7 +161,9 @@ AM_CONDITIONAL(H3, test `echo "$BOXTYPE"` == "h3")
 AM_CONDITIONAL(H5, test `echo "$BOXTYPE"` == "h5")
 AM_CONDITIONAL(LC, test `echo "$BOXTYPE"` == "lc")
 AM_CONDITIONAL(TRIPLEX, test `echo "$BOXTYPE"` == "triplex")
+AM_CONDITIONAL(TIVIARMIN, test "$BOXTYPE" == tiviarmin)
 AM_CONDITIONAL(SPARK, test `echo "$BOXTYPE" | cut -b 1-5` == spark)
+AM_CONDITIONAL(VS1000, test "$BOXTYPE" == "vs1000")
 AM_CONDITIONAL(XC7362, test "$BOXTYPE" == xc7362)
 AM_CONDITIONAL(XC7358, test "$BOXTYPE" == xc7358)
 AM_CONDITIONAL(XC7358CI, test "$BOXTYPE" == xc7358ci)
@@ -174,7 +176,7 @@ AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == d
 
 AM_CONDITIONAL(HAVE_ARMV7A, test "$BOXTYPE" == cube)
 AM_CONDITIONAL(HAVE_ARMV7AHF, test "$BOXTYPE" == hd51  -o "$BOXTYPE" == hd52 -o "$BOXTYPE" == vusolo4k -o "$BOXTYPE" == vuuno4k -o "$BOXTYPE" == vuultimo4k -o "$BOXTYPE" == dm900 -o "$BOXTYPE" == sf4008 -o "$BOXTYPE" == dags7252 -o "$BOXTYPE" == gb7252)
-AM_CONDITIONAL(HAVE_CORTEXA9HF, test "$BOXTYPE" == wetekplay -o "$BOXTYPE" == odroidc2)
+AM_CONDITIONAL(HAVE_CORTEXA9HF, test "$BOXTYPE" == wetekplay)
 
 AC_CONFIG_FILES([
 Makefile
