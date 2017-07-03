@@ -194,11 +194,11 @@ class BluetoothDevicesManager(Screen):
 	def initDevice(self):
 		print "[BluetoothManager] initDevice"
 		cmd = "hciconfig hci0 up"
-		if getBoxType() in ("spycat4k"):
+		if getBoxType() in ("spycat4k","spycat4kcombo"):
 			cmd = "hciattach ttyS1 qca | hciconfig hci0 up"
 		if getMachineBuild() in ("xc7346") or getBoxType() in ("spycat4kmini"):
 			cmd = "hciattach ttyS1 rtk_h5 | hciconfig hci0 up"
-		if getMachineBuild() in ("xc7362"):
+		if getMachineBuild() in ("xc7362") or getBoxType() in ("osnino"):
 			cmd = "hciattach ttyS2 rtk_h5 | hciconfig hci0 up"
 		self.taskManager.append(cmd, self.cbPrintAvailBTDev, self.cbRunNextTask)
 		cmd = "hcitool dev" ## check if hci0 is on the dev list, then make scan
@@ -215,7 +215,7 @@ class BluetoothDevicesManager(Screen):
 			
 	def keyGreen(self):
 		print "[BluetoothManager] keyGreen"  
-		if config.btdevicesmanager.autostart.getValue() or  brandoem == 'xcore':
+		if config.btdevicesmanager.autostart.getValue() or  brandoem in ("xcore","edision"):
 			self["ConnStatus"].setText(_("No connected to any device"))
 			self.initDevice()
 		else:
@@ -341,7 +341,7 @@ def main(session, **kwargs):
 	session.open(BluetoothDevicesManager)
 
 def autostart(reason, **kwargs):
-	if brandoem != 'xcore':
+	if brandoem not in ("xcore","edision"):
 		if reason == 0:
 			if config.btdevicesmanager.autostart.getValue():
 				print "[BluetoothManager] Autostart: Loading driver" ## We have it on a blacklist because We want to have faster system loading, so We load driver while we enable it.

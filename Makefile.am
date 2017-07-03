@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = Blindscan DLNABrowser DLNAServer StreamTV 3GModemManager TunerServer OnDemand Fempa LCD4linux RemoteChannelStreamConverter BTDevicesManager SatipClient TerrestrialScan ChannelsImporter
+SUBDIRS = Blindscan DLNABrowser DLNAServer StreamTV 3GModemManager TunerServer OnDemand Fempa LCD4linux RemoteChannelStreamConverter BTDevicesManager SatipClient TerrestrialScan ChannelsImporter DsayersCustomMixImporter
 
 if MIPSEL
 SUBDIRS += WirelessAccessPoint
@@ -15,6 +15,10 @@ SUBDIRS += TransCodingSetup
 endif
 
 if DAGS7356
+SUBDIRS += TransCodingSetup
+endif
+
+if DAGS7252
 SUBDIRS += TransCodingSetup
 endif
 
@@ -39,6 +43,10 @@ SUBDIRS += F3LEDControl
 endif
 
 if HD51
+SUBDIRS += F3LEDControl
+endif
+
+if ET1x000
 SUBDIRS += F3LEDControl
 endif
 
@@ -118,7 +126,7 @@ if INIHDP
 SUBDIRS += MultiTransCodingSetup
 endif
 
-if FORMULER1
+if FORMULER1TC
 SUBDIRS += MultiTransCodingSetup
 endif
 
@@ -127,6 +135,14 @@ SUBDIRS += F3LEDControl
 endif
 
 if FORMULER4
+SUBDIRS += F3LEDControl
+endif
+
+if FORMULER3IP
+SUBDIRS += F3LEDControl
+endif
+
+if FORMULER4IP
 SUBDIRS += F3LEDControl
 endif
 
@@ -178,6 +194,10 @@ if H5
 SUBDIRS += F3LEDControl
 endif
 
+if H7
+SUBDIRS += F3LEDControl
+endif
+
 if LC
 SUBDIRS += F3LEDControl
 endif
@@ -223,7 +243,7 @@ SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
 endif
 
 if GIGABLUE
-SUBDIRS += GigaBlueVFDControl AudioEffect
+SUBDIRS += GigaBlueVFDControl AudioEffect GigaBlueRemote
 endif
 
 if XP1000

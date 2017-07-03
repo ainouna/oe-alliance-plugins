@@ -70,6 +70,7 @@ AM_CONDITIONAL(DAGS7335, test "$BOXTYPE" == "dags7335")
 AM_CONDITIONAL(DAGS7362, test "$BOXTYPE" == "dags7362")
 AM_CONDITIONAL(DAGS73625, test "$BOXTYPE" == "dags73625")
 AM_CONDITIONAL(DAGS7356, test "$BOXTYPE" == "dags7356")
+AM_CONDITIONAL(DAGS7252, test "$BOXTYPE" == "dags7252")
 AM_CONDITIONAL(DM500HD, test "$BOXTYPE" == "dm500hd")
 AM_CONDITIONAL(DM500HDV2, test "$BOXTYPE" == "dm500hdv2")
 AM_CONDITIONAL(DM800, test "$BOXTYPE" == "dm800")
@@ -89,6 +90,7 @@ AM_CONDITIONAL(ET6X00, test "$BOXTYPE" == "et6x00")
 AM_CONDITIONAL(ET9X00, test "$BOXTYPE" == "et9x00")
 AM_CONDITIONAL(ET8000, test "$BOXTYPE" == "et8000")
 AM_CONDITIONAL(ET10000, test "$BOXTYPE" == "et10000")
+AM_CONDITIONAL(ET1x000, test "$BOXTYPE" == "et1x000")
 AM_CONDITIONAL(VG2000, test `echo "$BOXTYPE"` == "vg2000")
 AM_CONDITIONAL(VG5000, test `echo "$BOXTYPE"` == "vg5000")
 AM_CONDITIONAL(JJ7362, test `echo "$BOXTYPE"` == "jj7362")
@@ -98,6 +100,9 @@ AM_CONDITIONAL(EW7356, test `echo "$BOXTYPE"` == "ew7356")
 AM_CONDITIONAL(FORMULER1, test "$BOXTYPE" == formuler1)
 AM_CONDITIONAL(FORMULER3, test "$BOXTYPE" == formuler3)
 AM_CONDITIONAL(FORMULER4, test "$BOXTYPE" == formuler4)
+AM_CONDITIONAL(FORMULER1TC, test "$BOXTYPE" == formuler1tc)
+AM_CONDITIONAL(FORMULER3IP, test "$BOXTYPE" == formuler3ip)
+AM_CONDITIONAL(FORMULER4IP, test "$BOXTYPE" == formuler4ip)
 AM_CONDITIONAL(FORMULER4TURBO, test "$BOXTYPE" == formuler4turbo)
 AM_CONDITIONAL(G100, test "$BOXTYPE" == "g100")
 AM_CONDITIONAL(G101, test "$BOXTYPE" == "g101")
@@ -109,6 +114,7 @@ AM_CONDITIONAL(GB800UEPLUS, test "$BOXTYPE" == "gb800ueplus")
 AM_CONDITIONAL(GBIPBOX, test "$BOXTYPE" == "gbipbox")
 AM_CONDITIONAL(GBQUADPLUS, test "$BOXTYPE" == "gbquadplus")
 AM_CONDITIONAL(GBQUAD, test "$BOXTYPE" == "gbquad")
+AM_CONDITIONAL(GBQUAD4K, test "$BOXTYPE" == "gbquad4k")
 AM_CONDITIONAL(GBULTRAUE, test "$BOXTYPE" == "gbultraue")
 AM_CONDITIONAL(GBULTRAUEH, test "$BOXTYPE" == "gbultraueh")
 AM_CONDITIONAL(GBX1, test "$BOXTYPE" == "gbx1")
@@ -120,6 +126,7 @@ AM_CONDITIONAL(GB7362, test "$BOXTYPE" == "gb7362")
 AM_CONDITIONAL(GB73625, test "$BOXTYPE" == "gb73625")
 AM_CONDITIONAL(GB7358, test "$BOXTYPE" == "gb7358")
 AM_CONDITIONAL(GB7325, test "$BOXTYPE" == "gb7325")
+AM_CONDITIONAL(GB7252, test "$BOXTYPE" == "gb7252")
 AM_CONDITIONAL(INIHDE, test "$BOXTYPE" == "inihde")
 AM_CONDITIONAL(INIHDE2, test `echo "$BOXTYPE" | cut -b 1-7` == inihde2)
 AM_CONDITIONAL(INIHDP, test "$BOXTYPE" == "inihdp")
@@ -159,6 +166,7 @@ AM_CONDITIONAL(S7400S, test `echo "$BOXTYPE"` == "7400s")
 AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(H3, test `echo "$BOXTYPE"` == "h3")
 AM_CONDITIONAL(H5, test `echo "$BOXTYPE"` == "h5")
+AM_CONDITIONAL(H7, test `echo "$BOXTYPE"` == "h7")
 AM_CONDITIONAL(LC, test `echo "$BOXTYPE"` == "lc")
 AM_CONDITIONAL(TRIPLEX, test `echo "$BOXTYPE"` == "triplex")
 AM_CONDITIONAL(TIVIARMIN, test "$BOXTYPE" == tiviarmin)
@@ -175,7 +183,7 @@ fi
 AM_CONDITIONAL(HAVE_TEMPFANCONTROL, test "$BOXTYPE" == dm8000 -o "$BOXTYPE" == dm800se -o "$BOXTYPE" == dm800sev2 -o "$BOXTYPE" == dm500hd -o "$BOXTYPE" == vuuno -o "$BOXTYPE" == vuultimo -o "$BOXTYPE" == vusolo2 -o "$BOXTYPE" == vuduo2 -o "$BOXTYPE" == dags1 -o "$BOXTYPE" == dags2 -o "$BOXTYPE" == dags3 -o "$BOXTYPE" == dags4 -o "$BOXTYPE" == dags5 -o "$BOXTYPE" == dags7335 -o "$BOXTYPE" == dags7362 -o "$BOXTYPE" == dags73625 -o "$BOXTYPE" == dags7356 -o "$BOXTYPE" == triplex)
 
 AM_CONDITIONAL(HAVE_ARMV7A, test "$BOXTYPE" == cube)
-AM_CONDITIONAL(HAVE_ARMV7AHF, test "$BOXTYPE" == hd51  -o "$BOXTYPE" == hd52 -o "$BOXTYPE" == vusolo4k -o "$BOXTYPE" == vuuno4k -o "$BOXTYPE" == vuultimo4k -o "$BOXTYPE" == dm900 -o "$BOXTYPE" == sf4008 -o "$BOXTYPE" == dags7252 -o "$BOXTYPE" == gb7252)
+AM_CONDITIONAL(HAVE_ARMV7AHF, test "$BOXTYPE" == hd51 -o "$BOXTYPE" == hd52 -o "$BOXTYPE" == vs1500 -o "$BOXTYPE" == vusolo4k -o "$BOXTYPE" == vuuno4k -o "$BOXTYPE" == vuultimo4k -o "$BOXTYPE" == dm900 -o "$BOXTYPE" == sf4008 -o "$BOXTYPE" == dags7252 -o "$BOXTYPE" == gb7252 -o "$BOXTYPE" == xc7439 -o "$BOXTYPE" == h7)
 AM_CONDITIONAL(HAVE_CORTEXA9HF, test "$BOXTYPE" == wetekplay)
 
 AC_CONFIG_FILES([
@@ -228,6 +236,11 @@ DMBlindscan/src/Makefile
 DMBlindscan/meta/Makefile
 DMBlindscan/po/Makefile
 
+DsayersCustomMixImporter/Makefile
+DsayersCustomMixImporter/meta/Makefile
+DsayersCustomMixImporter/po/Makefile
+DsayersCustomMixImporter/src/Makefile
+
 FirmwareUpgrade/Makefile
 FirmwareUpgrade/src/Makefile
 FirmwareUpgrade/meta/Makefile
@@ -242,6 +255,11 @@ FPGAUpgrade/Makefile
 FPGAUpgrade/src/Makefile
 FPGAUpgrade/meta/Makefile
 FPGAUpgrade/po/Makefile
+
+GigaBlueRemote/Makefile
+GigaBlueRemote/src/Makefile
+GigaBlueRemote/meta/Makefile
+GigaBlueRemote/po/Makefile
 
 GigaBlueVFDControl/Makefile
 GigaBlueVFDControl/src/Makefile
