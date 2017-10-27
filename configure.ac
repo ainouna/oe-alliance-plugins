@@ -164,6 +164,7 @@ AM_CONDITIONAL(S7220S, test `echo "$BOXTYPE"` == "7220s")
 AM_CONDITIONAL(S7225S, test `echo "$BOXTYPE"` == "7225s")
 AM_CONDITIONAL(S7300S, test `echo "$BOXTYPE"` == "7300s")
 AM_CONDITIONAL(S7400S, test `echo "$BOXTYPE"` == "7400s")
+AM_CONDITIONAL(S8100S, test `echo "$BOXTYPE"` == "8100s")
 AM_CONDITIONAL(SF5008, test `echo "$BOXTYPE"` == "sf5008")
 AM_CONDITIONAL(SH1, test `echo "$BOXTYPE"` == "sh1")
 AM_CONDITIONAL(H3, test `echo "$BOXTYPE"` == "h3")
@@ -239,11 +240,11 @@ DMBlindscan/src/Makefile
 DMBlindscan/meta/Makefile
 DMBlindscan/po/Makefile
 
-DsayersCustomMixImporter/Makefile
-DsayersCustomMixImporter/meta/Makefile
-DsayersCustomMixImporter/po/Makefile
-DsayersCustomMixImporter/src/Makefile
-DsayersCustomMixImporter/mixes/Makefile
+ABMCustomMixImporter/Makefile
+ABMCustomMixImporter/meta/Makefile
+ABMCustomMixImporter/po/Makefile
+ABMCustomMixImporter/src/Makefile
+ABMCustomMixImporter/mixes/Makefile
 
 FirmwareUpgrade/Makefile
 FirmwareUpgrade/src/Makefile
