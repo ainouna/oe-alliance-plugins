@@ -1,0 +1,71 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: AnimationSetup\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: vuplus-community.net <insanity@>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.4\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;_\n"
+"X-Poedit-Basepath: ..\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: it\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: .\n"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Default"
+msgstr "Predefinita"
+
+msgid "Animation Setup"
+msgstr "Impostare animazioni"
+
+msgid "Animation Speed"
+msgstr "Velocità animazione"
+
+msgid "Disable Animations"
+msgstr "Disabilitare animazioni"
+
+msgid "Simple fade"
+msgstr "Dissolvenza semplice"
+
+msgid "Grow drop"
+msgstr "Comparsa crescente"
+
+msgid "Grow from left"
+msgstr "Comparsa da sinistra"
+
+msgid "Popup"
+msgstr "Popup"
+
+msgid "Slide drop"
+msgstr "Animazioni scorrevoli"
+
+msgid "Slide left to right"
+msgstr "Scorrimento da sinistra a destra"
+
+msgid "Slide top to bottom"
+msgstr "Scorrimento da alto verso il basso"
+
+msgid "Stripes"
+msgstr "Strisce"
+
+msgid "* current animation"
+msgstr "* animazione corrente"
+
+msgid "Setting"
+msgstr "Configurazione"
+
+msgid "Preview"
+msgstr "Anteprima"
+
+msgid "Animations"
+msgstr "Animazioni"

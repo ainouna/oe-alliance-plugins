@@ -214,6 +214,10 @@ if H7
 SUBDIRS += F3LEDControl
 endif
 
+if H9
+SUBDIRS += MultiTransCodingSetup
+endif
+
 if LC
 SUBDIRS += F3LEDControl
 endif
@@ -251,6 +255,14 @@ SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
 endif
 
 if VUUNO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
+endif
+
+if VUZERO4K
+SUBDIRS += FirmwareUpgrade VuRemote
+endif
+
+if VUUNO4KSE
 SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
 endif
 
@@ -316,5 +328,13 @@ SUBDIRS += VPLEDControl
 endif
 
 if XC7358CI
+SUBDIRS += VPLEDControl
+endif
+
+if OSNINO
+SUBDIRS += VPLEDControl
+endif
+
+if OSNINOPLUS
 SUBDIRS += VPLEDControl
 endif
