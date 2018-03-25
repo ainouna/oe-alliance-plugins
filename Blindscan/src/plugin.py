@@ -1312,7 +1312,11 @@ def BlindscanCallback(close, answer):
 		close(True)
 
 def BlindscanMain(session, close=None, **kwargs):
-	session.openWithCallback(boundFunction(BlindscanCallback, close), Blindscan)
+	if 'Supports_Blind_Scan: yes' in open('/proc/bus/nim_sockets').read():
+		import dmmBlindScan
+		session.openWithCallback(boundFunction(BlindscanCallback, close), dmmBlindScan.DmmBlindscan)
+	else:
+		session.openWithCallback(boundFunction(BlindscanCallback, close), Blindscan)
 
 def BlindscanSetup(menuid, **kwargs):
 	if menuid == "scan":
