@@ -6,6 +6,7 @@ from __init__ import _
 from Components.config import configfile, config
 from enigma import eTimer
 from module import L4Lelement
+from boxbranding import getOEVersion
 
 L4LElement = L4Lelement()
 
@@ -26,8 +27,8 @@ L1 = []
 L2 = []
 L3 = []
 L4 = []
-M1 = ["LCD4linux.OSD","LCD4linux.Scr","LCD4linux.Bil","LCD4linux.Wet","LCD4linux.Net","LCD4linux.Pop","LCD4linux.Fri","LCD4linux.Fon","LCD4linux.Mai","LCD4linux.Cal","LCD4linux.RBo","LCD4linux.Www","LCD4linux.Web","LCD4linux.MJP","LCD4linux.xml","LCD4linux.Tun","LCD4linux.Key","LCD4linux.Son","LCD4linux.YMC"]
-M2 = [_("OSD"),_("Screen"),_("Picture"),_("Weather"),_("Netatmo"),_("Popup-Text"),_("FritzCall"),_("Font"),_("Mail"),_("Calendar"),_("Remote Box"),_("WWW Converter"),_("WebIF"),_("MJPEG Stream"),_("Box-Skin-LCD"),_("Tuner"),_("Key"),_("Sonos"),_("MusicCast")]
+M1 = ["LCD4linux.OSD","LCD4linux.Scr","LCD4linux.Bil","LCD4linux.Wet","LCD4linux.Net","LCD4linux.Pop","LCD4linux.Fri","LCD4linux.Fon","LCD4linux.Mai","LCD4linux.Cal","LCD4linux.RBo","LCD4linux.Www","LCD4linux.Web","LCD4linux.MJP","LCD4linux.xml","LCD4linux.Tun","LCD4linux.Key","LCD4linux.Blu","LCD4linux.Son","LCD4linux.YMC"]
+M2 = [_("OSD"),_("Screen"),_("Picture"),_("Weather"),_("Netatmo"),_("Popup-Text"),_("FritzCall"),_("Font"),_("Mail"),_("Calendar"),_("Remote Box"),_("WWW Converter"),_("WebIF"),_("MJPEG Stream"),_("Box-Skin-LCD"),_("Tuner"),_("Key"),_("BlueSound"),_("Sonos"),_("MusicCast")]
 
 Mode = "1"
 ModeOld = ""
@@ -146,12 +147,16 @@ class LCD4linuxConfigweb(resource.Resource):
 		global ExeMode
 		global StatusMode
 		IP = req.getClientIP()
+		if getOEVersion() == "OE-Alliance 4.3":
+			IP = IP.split(":")[-1]
 		L4logE("IP1:",IP)
 		if IP is None:
 			IP = req.client.host.split(":")[-1]
 			L4logE("IP2:",req.client.host)
 			if IP.find(".") == -1:
 				IP = None
+		else:
+			IP = IP.split(":")[-1]
 		if IP is None:
 			Block = False
 		else:

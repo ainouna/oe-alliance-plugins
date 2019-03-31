@@ -1,0 +1,52 @@
+#!/bin/sh
+
+default_asoundconf() {
+cat << EOF > /etc/asound.conf
+pcm.!default {
+    type plug
+    slave.pcm "hw:0"
+}
+
+ctl.mixer0 {
+    type hw
+    card 0
+}
+EOF
+}
+
+bluetooth_asoundconf() {
+cat << EOF >> /etc/asound.conf
+pcm.bluetooth {
+    type plug
+    slave.pcm {
+        type bluealsa
+        interface "hci0"
+        device "$1"
+        profile "a2dp"
+    }
+    hint {
+        show on
+        description "Bluetooth $2"
+    }
+}
+
+ctl.bluetooth {
+    type bluealsa
+}
+EOF
+}
+
+pkill aplay
+while pgrep aplay > /dev/null; do sleep 1; done
+default_asoundconf
+
+if [ ! -z "$1" ]; then
+  bluetoothaddr=$@
+  bluetoothctl connect ${bluetoothaddr} || exit 0
+  bluetoothctl info ${bluetoothaddr}  | grep -q "Audio Sink" || exit 0
+  bluetoothname="$(bluetoothctl info ${bluetoothaddr} | grep "Name" | cut -d ':' -f 2)"
+  bluetooth_asoundconf ${bluetoothaddr} ${bluetoothname}
+  arecord -q -f dat | aplay -q -f dat -D bluetooth &
+fi
+
+exit 0

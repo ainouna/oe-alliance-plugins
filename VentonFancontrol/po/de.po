@@ -2,81 +2,44 @@ msgid ""
 msgstr ""
 "Project-Id-Version: enigma2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-05-07 14:08+0200\n"
-"PO-Revision-Date: 2016-05-07 14:08+0200\n"
-"Last-Translator: neoatomic <neoatomic@users.noreply.github.com>\n"
+"POT-Creation-Date: 2018-07-30 19:14+0200\n"
+"PO-Revision-Date: 2018-10-14 22:43+0200\n"
+"Last-Translator: Manfred Aabye <openmanniland@gmx.de>\n"
 "Language-Team: Deutsch <> j-ot&Trial\n"
-"Language: de\n"
+"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n!=1);\n"
-"X-Generator: Poedit 1.8.7\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 2.2\n"
 "X-Poedit-SourceCharset: iso-8859-15\n"
 
-#: ../src/plugin.py:6
-msgid "Off"
-msgstr ""
-
-#: ../src/plugin.py:6
-msgid "On"
-msgstr ""
-
-#: ../src/plugin.py:6
 msgid "Auto"
-msgstr ""
+msgstr "Auto"
 
-#: ../src/plugin.py:25
-msgid "Fan setup"
-msgstr ""
-
-#: ../src/plugin.py:30
 msgid "Cancel"
-msgstr ""
+msgstr "Abbrechen"
 
-#: ../src/plugin.py:31
-msgid "Save"
-msgstr "Speichern"
-
-#: ../src/plugin.py:48
-msgid "Fan mode"
-msgstr ""
-
-#: ../src/plugin.py:105
 msgid "FAN Control"
-msgstr ""
+msgstr "Lüftersteuerung"
 
-#: ../src/plugin.py:113
 msgid "Fan Control"
 msgstr "Lüfterkontrolle"
 
-#: ../src/plugin.py:113
+msgid "Fan mode"
+msgstr "Lüfter Modus"
+
+msgid "Fan setup"
+msgstr "Lüfter Einstellung"
+
+msgid "Off"
+msgstr "Deaktiviert"
+
+msgid "On"
+msgstr "An"
+
+msgid "Save"
+msgstr "Speichern"
+
 msgid "switch Fan On/Off"
-msgstr ""
-
-#~ msgid "Close"
-#~ msgstr "Schließen"
-
-#~ msgid "Fan off duration time"
-#~ msgstr "Zeitdauer für Lüfter aus"
-
-#~ msgid "Fan on duration time"
-#~ msgstr "Zeitdauer für Lüfter an"
-
-#~ msgid "Really close without saving settings?"
-#~ msgstr "Wirklich ohne Sichern beenden?"
-
-#~ msgid "Use Fan timer"
-#~ msgstr "Fan Timer benutzen"
-
-#~ msgid "no"
-#~ msgstr "nein"
-
-#~ msgid "off"
-#~ msgstr "aus"
-
-#~ msgid "on"
-#~ msgstr "an"
-
-#~ msgid "yes"
-#~ msgstr "ja"
+msgstr "Schalter Lüfter ein/aus"

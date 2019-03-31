@@ -14,13 +14,13 @@
 #  Advertise with this Plugin is not allowed.
 #  For other uses, permission from the author is necessary.
 #
-Version = "V5.0-r1"
+Version = "V5.0-r4"
 from __init__ import _
 from enigma import eConsoleAppContainer, eActionMap, iServiceInformation, iFrontendInformation, eDVBResourceManager, eDVBVolumecontrol
 from enigma import getDesktop, getEnigmaVersionString
 from enigma import ePicLoad, ePixmap
 
-from boxbranding import getImageDistro, getBoxType
+from boxbranding import getImageDistro, getDisplayType, getBoxType, getImageArch
 from Screens.Screen import Screen
 from Plugins.Plugin import PluginDescriptor
 from Components.ActionMap import ActionMap
@@ -165,20 +165,20 @@ L4LdoThread = True
 LCD4config = "/etc/enigma2/lcd4config"
 LCD4plugin ="/usr/lib/enigma2/python/Plugins/Extensions/LCD4linux/"
 Data = LCD4plugin+"data/"
-if getBoxType() in ('gbquad','gb800ue','gb800ueplus','gbultraue','gbultraueh','gbue4k'):
-	LCD4default = Data+"default.gigablue"
-elif getBoxType() in ('gbquadplus','gbquad4k'):
-	LCD4default = Data+"default.quadplus"
+if getDisplayType() in ('colorlcd220'):
+	LCD4default = Data+"default.colorlcd220"
+elif getDisplayType() in ('colorlcd400'):
+	LCD4default = Data+"default.colorlcd400"
 elif getBoxType() == 'vuduo2':
 	LCD4default = Data+"default.vuduo2"
-elif getBoxType() == 'et8500':
-	LCD4default = Data+"default.et8500"
-elif getBoxType() == 'vusolo4k':
-	LCD4default = Data+"default.solo4k"
-elif getBoxType() == 'vuultimo4k':
-	LCD4default = Data+"default.ultimo4k"
-elif getBoxType() in ('mutant2400','quadbox2400'):
-	LCD4default = Data+"default.hd2400"
+elif getDisplayType() in ('colorlcd720'):
+	LCD4default = Data+"default.colorlcd720"
+elif getDisplayType() in ('colorlcd480'):
+	LCD4default = Data+"default.colorlcd480"
+elif getDisplayType() in ('colorlcd800'):
+	LCD4default = Data+"default.colorlcd800"
+elif getDisplayType() in ('bwlcd255'):
+	LCD4default = Data+"default.bwlcd255"
 else:
 	LCD4default = Data+"default.lcd"
 WetterPath = LCD4plugin+"wetter/"
@@ -296,6 +296,16 @@ if ctypes.util.find_library("usb-0.1") is not None or ctypes.util.find_library("
 	import usb.util
 	import dpf
 	USBok = True
+elif getImageArch() in ("aarch64"):
+	import usb.core
+	import usb.backend.libusb1
+	usb.backend.libusb1.get_backend(find_library=lambda x: "/lib64/libusb-1.0.so.0")
+	print "[LCD4linux] libusb found :-)",getEnigmaVersionString()
+	import Photoframe
+	import usb.util
+	import dpf
+	USBok = True
+
 
 Farbe = [("black", _("black")), ("white", _("white")), 
  ("gray", _("gray")), ("silver", _("silver")), ("slategray", _("slategray")),
@@ -467,6 +477,11 @@ LCD4linux.WetterExtraColorFeel = ConfigSelection(choices = Farbe, default="silve
 LCD4linux.WetterWind = ConfigSelection(choices = [("0", _("km/h")), ("1", _("m/s"))], default = "0")
 LCD4linux.MeteoURL = ConfigText(default="http://", fixed_size=False, visible_width=50)
 LCD4linux.MoonPath = ConfigText(default="", fixed_size=False, visible_width=50)
+LCD4linux.BlueIP = ConfigText(default="", fixed_size=False, visible_width=50)
+LCD4linux.BlueServerIP = ConfigText(default="", fixed_size=False, visible_width=50)
+LCD4linux.BluePingTimeout = ConfigSlider(default = 50,  increment = 5, limits = (0, 1000))
+LCD4linux.BlueTimer = ConfigSelection(choices =  [("1", _("1")), ("2", _("2")), ("3", _("3")), ("5", _("5")), ("10", _("10")), ("20", _("20")), ("30", _("30")), ("60", _("60"))], default="10")
+LCD4linux.BlueCheckTimer = ConfigSelection(choices = [("2", _("10s")), ("3", _("15s")), ("4", _("20s")), ("6", _("30s")), ("12", _("1min")), ("24", _("2min"))], default="12")
 LCD4linux.SonosIP = ConfigText(default="", fixed_size=False, visible_width=50)
 LCD4linux.SonosON = ConfigYesNo(default = False)
 LCD4linux.SonosPingTimeout = ConfigSlider(default = 50,  increment = 5, limits = (0, 1000))
@@ -904,6 +919,18 @@ LCD4linux.PingName2 = ConfigText(default="", fixed_size=False)
 LCD4linux.PingName3 = ConfigText(default="", fixed_size=False)
 LCD4linux.PingName4 = ConfigText(default="", fixed_size=False)
 LCD4linux.PingName5 = ConfigText(default="", fixed_size=False)
+LCD4linux.ExternalIp = ConfigSelection(choices = ScreenSelect, default="0")
+LCD4linux.ExternalIpLCD = ConfigSelection(choices = LCDSelect, default="1")
+LCD4linux.ExternalIpFile = ConfigText(default="/tmp/lcd4linux.txt", fixed_size=False, visible_width=50)
+LCD4linux.ExternalIpSize = ConfigSlider(default = 32,  increment = 1, limits = (10, 300))
+LCD4linux.ExternalIpFont = ConfigSelection(choices = FontType, default="0")
+LCD4linux.ExternalIpPos = ConfigSlider(default = 120,  increment = 2, limits = (0, 1024))
+LCD4linux.ExternalIpAlign = ConfigSelection(choices = AlignType, default="0")
+LCD4linux.ExternalIpSplit = ConfigYesNo(default = False)
+LCD4linux.ExternalIpShadow = ConfigYesNo(default = False)
+LCD4linux.ExternalIpColor = ConfigSelection(choices = Farbe, default="white")
+LCD4linux.ExternalIpBackColor = ConfigSelection(choices = [("0", _("off"))] + Farbe, default="0")
+LCD4linux.ExternalIpUrl = ConfigText(default="http://icanhazip.com", fixed_size=False, visible_width=50)
 LCD4linux.RBox = ConfigSelection(choices = ScreenSelect, default="0")
 LCD4linux.RBoxLCD = ConfigSelection(choices = LCDSelect, default="1")
 LCD4linux.RBoxSize = ConfigSlider(default = 15,  increment = 2, limits = (6, 100))
@@ -1356,6 +1383,17 @@ LCD4linux.MPPingName2 = ConfigText(default="", fixed_size=False)
 LCD4linux.MPPingName3 = ConfigText(default="", fixed_size=False)
 LCD4linux.MPPingName4 = ConfigText(default="", fixed_size=False)
 LCD4linux.MPPingName5 = ConfigText(default="", fixed_size=False)
+LCD4linux.MPExternalIp = ConfigSelection(choices = ScreenSelect, default="0")
+LCD4linux.MPExternalIpLCD = ConfigSelection(choices = LCDSelect, default="1")
+LCD4linux.MPExternalIpFile = ConfigText(default="/tmp/lcd4linux.txt", fixed_size=False, visible_width=50)
+LCD4linux.MPExternalIpSize = ConfigSlider(default = 32,  increment = 1, limits = (10, 300))
+LCD4linux.MPExternalIpFont = ConfigSelection(choices = FontType, default="0")
+LCD4linux.MPExternalIpPos = ConfigSlider(default = 120,  increment = 2, limits = (0, 1024))
+LCD4linux.MPExternalIpAlign = ConfigSelection(choices = AlignType, default="0")
+LCD4linux.MPExternalIpSplit = ConfigYesNo(default = False)
+LCD4linux.MPExternalIpShadow = ConfigYesNo(default = False)
+LCD4linux.MPExternalIpColor = ConfigSelection(choices = Farbe, default="white")
+LCD4linux.MPExternalIpBackColor = ConfigSelection(choices = [("0", _("off"))] + Farbe, default="0")
 LCD4linux.MPRBox = ConfigSelection(choices = ScreenSelect, default="0")
 LCD4linux.MPRBoxLCD = ConfigSelection(choices = LCDSelect, default="1")
 LCD4linux.MPRBoxSize = ConfigSlider(default = 15,  increment = 2, limits = (6, 100))
@@ -1666,6 +1704,7 @@ LCD4linux.MPCoverLCD = ConfigSelection(choices = LCDSelect, default="1")
 LCD4linux.MPCoverPath1 = ConfigText(default="/tmp", fixed_size=False, visible_width=50)
 LCD4linux.MPCoverPath2 = ConfigText(default="/tmp", fixed_size=False, visible_width=50)
 LCD4linux.MPCoverFile = ConfigText(default="/tmp/lcd4linux.jpg", fixed_size=False, visible_width=50)
+LCD4linux.MPCoverFile2 = ConfigText(default="/tmp/lcd4linux.jpg", fixed_size=False, visible_width=50)
 LCD4linux.MPCoverSize = ConfigSlider(default = 240,  increment = 10, limits = (10, 1024))
 LCD4linux.MPCoverSizeH = ConfigSlider(default = 400,  increment = 10, limits = (10, 800))
 LCD4linux.MPCoverPos = ConfigSlider(default = 0,  increment = 2, limits = (0, 1024))
@@ -1898,6 +1937,17 @@ LCD4linux.StandbyPingName2 = ConfigText(default="", fixed_size=False)
 LCD4linux.StandbyPingName3 = ConfigText(default="", fixed_size=False)
 LCD4linux.StandbyPingName4 = ConfigText(default="", fixed_size=False)
 LCD4linux.StandbyPingName5 = ConfigText(default="", fixed_size=False)
+LCD4linux.StandbyExternalIp = ConfigSelection(choices = ScreenSelect, default="0")
+LCD4linux.StandbyExternalIpLCD = ConfigSelection(choices = LCDSelect, default="1")
+LCD4linux.StandbyExternalIpFile = ConfigText(default="/tmp/lcd4linux.txt", fixed_size=False, visible_width=50)
+LCD4linux.StandbyExternalIpSize = ConfigSlider(default = 32,  increment = 1, limits = (10, 300))
+LCD4linux.StandbyExternalIpFont = ConfigSelection(choices = FontType, default="0")
+LCD4linux.StandbyExternalIpPos = ConfigSlider(default = 120,  increment = 2, limits = (0, 1024))
+LCD4linux.StandbyExternalIpAlign = ConfigSelection(choices = AlignType, default="0")
+LCD4linux.StandbyExternalIpSplit = ConfigYesNo(default = False)
+LCD4linux.StandbyExternalIpShadow = ConfigYesNo(default = False)
+LCD4linux.StandbyExternalIpColor = ConfigSelection(choices = Farbe, default="white")
+LCD4linux.StandbyExternalIpBackColor = ConfigSelection(choices = [("0", _("off"))] + Farbe, default="0")
 LCD4linux.StandbyRBox = ConfigSelection(choices = ScreenSelect, default="0")
 LCD4linux.StandbyRBoxLCD = ConfigSelection(choices = LCDSelect, default="1")
 LCD4linux.StandbyRBoxSize = ConfigSlider(default = 15,  increment = 2, limits = (6, 100))
@@ -2497,6 +2547,17 @@ def getDirection(angle):
 def getFeel(T,W):
 	return 13.12+0.6215*T-11.37*(W**0.16)+0.3965*T*(W**0.16)
 
+def getExternalIP():
+	try:
+		import urllib2
+		req = urllib2.Request(LCD4linux.ExternalIpUrl.value, data=None)
+		response = urllib2.urlopen(req, timeout=5)
+		return response.read()
+	except:
+		from traceback import format_exc
+		L4logE("Error: getExternalIP",format_exc() )
+		return "Error"
+
 def setFB2(value):
 	open("/proc/stb/fb/sd_detach","w").write(value)
 
@@ -2524,6 +2585,8 @@ def ICSdownloads():
 	global ICSlist
 	global ICSdownrun
 	global PICcal
+	from icalendar import vDatetime
+
 	def dateiter(start, resolution):
 		date = start
 		while True:
@@ -2553,7 +2616,8 @@ def ICSdownloads():
 				if Icomp[4] == (0,0):
 					dateT = date(DT.year,DT.month,DT.day)
 				else:
-					dateT = DT
+					DT = DT - timedelta(hours=getTimeDiffUTC())
+					dateT = vDatetime.from_ical("%04d%02d%02dT%02d%02d00Z" % (DT.year,DT.month,DT.day,DT.hour,DT.minute))
 				if Icomp[6] == 0:
 					dateS = Code_utf8(Icomp[1])
 				else:
@@ -3333,13 +3397,16 @@ def writeLCD3(s,im,quality,SAVE=True):
 		MJPEGreader[3] += 1 if MJPEGreader[3] < 100 else 0
 	s.imWrite[im] = False
 
+def isMediaDisplay(player):
+ return player in ["sonos","ymc","blue"]
+
 def NextScreen(PRESS):
 	global ScreenActive
 	global ScreenTime
 	if SaveEventListChanged == True:
 		L4logE("Event Change Aktive")
 		return
-	if (Standby.inStandby or ConfigStandby) and isMediaPlayer != "sonos" and isMediaPlayer != "ymc":
+	if (Standby.inStandby or ConfigStandby) and not isMediaDisplay(isMediaPlayer):
 		if ScreenActive[0] == "1":
 			ST = LCD4linux.StandbyScreenTime.value
 		elif ScreenActive[0] == "2":
@@ -3384,7 +3451,7 @@ def NextScreen(PRESS):
 	if ScreenTime >= int(ST) and int(ST) > 0 or PRESS == True:
 		ScreenTime=0
 		ScreenActive[0] = str(int(ScreenActive[0])+1)
-		if (Standby.inStandby or ConfigStandby) and isMediaPlayer != "sonos" and isMediaPlayer != "ymc":
+		if (Standby.inStandby or ConfigStandby) and not isMediaDisplay(isMediaPlayer):
 			if int(ScreenActive[0]) > int(LCD4linux.StandbyScreenMax.value):
 				ScreenActive[0] = "1"
 		elif (isMediaPlayer != "" and isMediaPlayer != "radio"):
@@ -3415,7 +3482,7 @@ def getBilder():
 	BilderOrt = ["","",""]
 	Bilder = [[],[],[]]
 	SuchExt = ["*.png","*.PNG","*.jpg","*.JPG"]
-	if (Standby.inStandby or ConfigStandby) and isMediaPlayer != "sonos" and isMediaPlayer != "ymc":
+	if (Standby.inStandby or ConfigStandby) and not isMediaDisplay(isMediaPlayer):
 		if str(LCD4linux.StandbyBild.value) != "0":
 			BilderOrt[0] = LCD4linux.StandbyBildFile.value
 		if str(LCD4linux.StandbyBild2.value) != "0":
@@ -3747,7 +3814,7 @@ def MJPEG_stop(force):
 		sleep(5)
 
 def getWWW():
-	if (str(LCD4linux.WWW1.value) != "0" and len(LCD4linux.WWW1url.value)>10) and (not Standby.inStandby or isMediaPlayer == "sonos" or isMediaPlayer == "ymc"):
+	if (str(LCD4linux.WWW1.value) != "0" and len(LCD4linux.WWW1url.value)>10) and (not Standby.inStandby or isMediaDisplay(isMediaPlayer)):
 		L4log("WWW Converter check on")
 		if LCD4linux.WwwApiUsage == "convertapi":
 			getHTMLwwwConvertapi(1,LCD4linux.WWW1url.value,LCD4linux.WWW1w.value,LCD4linux.WWW1h.value)
@@ -4347,6 +4414,7 @@ except:
 	SonosOK = False
 	L4log("Sonos not registered")
 from ymc import YMC
+from bluesound import BlueSound
 
 class GrabOSD:
 	def __init__(self, cmd):
@@ -5110,6 +5178,7 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 		self.skin = skin
 		self.session = session
 		Screen.__init__(self, session)
+		self.setTitle(_("LCD4linux Settings"))
 		L4log("init Start")
 		ConfigMode = True
 		OSDon = 0
@@ -5181,7 +5250,7 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
 		self["key_yellow"] = Button(_("Restart Displays"))
-		self["key_blue"] = Button("")
+		self["key_blue"] = Button(_("Set On >>"))
 		self["setupActions"] = ActionMap(["SetupActions", "ColorActions", "MenuActions", "EPGSelectActions", "HelpActions","InfobarSeekActions"],
 		{
 			"red": self.cancel,
@@ -5558,6 +5627,10 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 			self.list1.append(getConfigListEntry(_("Sonos Ping Timeout [ms]"), LCD4linux.SonosPingTimeout))
 			self.list1.append(getConfigListEntry(_("Sonos Play Check"), LCD4linux.SonosCheckTimer))
 			self.list1.append(getConfigListEntry(_("Sonos Refresh [s]"), LCD4linux.SonosTimer))
+			self.list1.append(getConfigListEntry(_("BlueSound IP"), LCD4linux.BlueIP))
+			self.list1.append(getConfigListEntry(_("BlueSound Ping Timeout [ms]"), LCD4linux.BluePingTimeout))
+			self.list1.append(getConfigListEntry(_("BlueSound Play Check"), LCD4linux.BlueCheckTimer))
+			self.list1.append(getConfigListEntry(_("BlueSound Refresh [s]"), LCD4linux.BlueTimer))
 			self.list1.append(getConfigListEntry(_("MusicCast IP"), LCD4linux.YMCastIP))
 			self.list1.append(getConfigListEntry(_("MusicCast Server IP [optional]"), LCD4linux.YMCastServerIP))
 			self.list1.append(getConfigListEntry(_("MusicCast Ping Timeout [ms]"), LCD4linux.YMCastPingTimeout))
@@ -5885,6 +5958,18 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 				self.list2.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.PingName3))
 				self.list2.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.PingName4))
 				self.list2.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.PingName5))
+			self.list2.append(getConfigListEntry(_("External IP Address"), LCD4linux.ExternalIp))
+			if LCD4linux.ExternalIp.value != "0":
+				self.list2.append(getConfigListEntry(_("- which LCD"), LCD4linux.ExternalIpLCD))
+				self.list2.append(getConfigListEntry(_("- Font Size"), LCD4linux.ExternalIpSize))
+				self.list2.append(getConfigListEntry(_("- Position"), LCD4linux.ExternalIpPos))
+				self.list2.append(getConfigListEntry(_("- Alignment"), LCD4linux.ExternalIpAlign))
+				self.list2.append(getConfigListEntry(_("- Split Screen"), LCD4linux.ExternalIpSplit))
+				self.list2.append(getConfigListEntry(_("- Color"), LCD4linux.ExternalIpColor))
+				self.list2.append(getConfigListEntry(_("- Background Color"), LCD4linux.ExternalIpBackColor))
+				self.list2.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.ExternalIpShadow))
+				self.list2.append(getConfigListEntry(_("- Font"), LCD4linux.ExternalIpFont))
+				self.list2.append(getConfigListEntry(_("- external IP URL"), LCD4linux.ExternalIpUrl))
 			self.list2.append(getConfigListEntry(_("Storage-Devices"), LCD4linux.Dev))
 			if LCD4linux.Dev.value != "0":
 				self.list2.append(getConfigListEntry(_("- which LCD"), LCD4linux.DevLCD))
@@ -6519,6 +6604,17 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 				self.list3.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.MPPingName3))
 				self.list3.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.MPPingName4))
 				self.list3.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.MPPingName5))
+			self.list3.append(getConfigListEntry(_("External IP Address"), LCD4linux.MPExternalIp))
+			if LCD4linux.MPExternalIp.value != "0":
+				self.list3.append(getConfigListEntry(_("- which LCD"), LCD4linux.MPExternalIpLCD))
+				self.list3.append(getConfigListEntry(_("- Font Size"), LCD4linux.MPExternalIpSize))
+				self.list3.append(getConfigListEntry(_("- Position"), LCD4linux.MPExternalIpPos))
+				self.list3.append(getConfigListEntry(_("- Alignment"), LCD4linux.MPExternalIpAlign))
+				self.list3.append(getConfigListEntry(_("- Split Screen"), LCD4linux.MPExternalIpSplit))
+				self.list3.append(getConfigListEntry(_("- Color"), LCD4linux.MPExternalIpColor))
+				self.list3.append(getConfigListEntry(_("- Background Color"), LCD4linux.MPExternalIpBackColor))
+				self.list3.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.MPExternalIpShadow))
+				self.list3.append(getConfigListEntry(_("- Font"), LCD4linux.MPExternalIpFont))
 			self.list3.append(getConfigListEntry(_("Storage-Devices"), LCD4linux.MPDev))
 			if LCD4linux.MPDev.value != "0":
 				self.list3.append(getConfigListEntry(_("- which LCD"), LCD4linux.MPDevLCD))
@@ -6715,6 +6811,7 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 				self.list3.append(getConfigListEntry(_("- Alignment"), LCD4linux.MPCoverAlign))
 				self.list3.append(getConfigListEntry(_("- Search Path [ok]>"), LCD4linux.MPCoverPath1))
 				self.list3.append(getConfigListEntry(_("- Search Path [ok]>"), LCD4linux.MPCoverPath2))
+				self.list3.append(getConfigListEntry(_("- Find Cover File [ok]>"), LCD4linux.MPCoverFile2))
 				self.list3.append(getConfigListEntry(_("- Default Cover [ok]>"), LCD4linux.MPCoverFile))
 				self.list3.append(getConfigListEntry(_("- Picon First"), LCD4linux.MPCoverPiconFirst))
 				self.list3.append(getConfigListEntry(_("- Transparency"), LCD4linux.MPCoverTransp))
@@ -7011,6 +7108,17 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 				self.list4.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.StandbyPingName3))
 				self.list4.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.StandbyPingName4))
 				self.list4.append(getConfigListEntry(_("- Online Name:Address"), LCD4linux.StandbyPingName5))
+			self.list4.append(getConfigListEntry(_("External IP Address"), LCD4linux.StandbyExternalIp))
+			if LCD4linux.StandbyExternalIp.value != "0":
+				self.list4.append(getConfigListEntry(_("- which LCD"), LCD4linux.StandbyExternalIpLCD))
+				self.list4.append(getConfigListEntry(_("- Font Size"), LCD4linux.StandbyExternalIpSize))
+				self.list4.append(getConfigListEntry(_("- Position"), LCD4linux.StandbyExternalIpPos))
+				self.list4.append(getConfigListEntry(_("- Alignment"), LCD4linux.StandbyExternalIpAlign))
+				self.list4.append(getConfigListEntry(_("- Split Screen"), LCD4linux.StandbyExternalIpSplit))
+				self.list4.append(getConfigListEntry(_("- Color"), LCD4linux.StandbyExternalIpColor))
+				self.list4.append(getConfigListEntry(_("- Background Color"), LCD4linux.StandbyExternalIpBackColor))
+				self.list4.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.StandbyExternalIpShadow))
+				self.list4.append(getConfigListEntry(_("- Font"), LCD4linux.StandbyExternalIpFont))
 			self.list4.append(getConfigListEntry(_("Storage-Devices"), LCD4linux.StandbyDev))
 			if LCD4linux.StandbyDev.value != "0":
 				self.list4.append(getConfigListEntry(_("- which LCD"), LCD4linux.StandbyDevLCD))
@@ -7452,7 +7560,7 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 			elif sel in [LCD4linux.LCDBild1, LCD4linux.LCDBild2, LCD4linux.MPLCDBild1, LCD4linux.MPLCDBild2, LCD4linux.StandbyLCDBild1, LCD4linux.StandbyLCDBild2, LCD4linux.FritzFrame]:
 				L4log("select File 1")
 				self.session.openWithCallback(self.fileSelected, LCDdisplayFile, text = _("Choose file"), FileName = self["config"].getCurrent()[1].value, showFiles = True)
-			elif sel in [LCD4linux.OSCAMFile, LCD4linux.TextFile, LCD4linux.Text2File, LCD4linux.Text3File, LCD4linux.MPTextFile, LCD4linux.MPCoverFile, LCD4linux.BildFile, LCD4linux.Bild2File, LCD4linux.Bild3File, LCD4linux.Bild4File, LCD4linux.RecordingPath]:
+			elif sel in [LCD4linux.OSCAMFile, LCD4linux.TextFile, LCD4linux.Text2File, LCD4linux.Text3File, LCD4linux.MPTextFile, LCD4linux.MPCoverFile, LCD4linux.MPCoverFile2, LCD4linux.BildFile, LCD4linux.Bild2File, LCD4linux.Bild3File, LCD4linux.Bild4File, LCD4linux.RecordingPath]:
 				L4log("select File 2")
 				self.session.openWithCallback(self.fileSelected, LCDdisplayFile, text = _("Choose file"), FileName = self["config"].getCurrent()[1].value, showFiles = True)
 			elif sel in [LCD4linux.Font, LCD4linux.Font1, LCD4linux.Font2, LCD4linux.Font3, LCD4linux.Font4, LCD4linux.Font5]:
@@ -7535,6 +7643,8 @@ class LCDdisplayConfig(ConfigListScreen,Screen):
 				LCD4linux.MPTextFile.value = dirdir
 			elif sel == LCD4linux.MPCoverFile:
 				LCD4linux.MPCoverFile.value = dirdir
+			elif sel == LCD4linux.MPCoverFile2:
+				LCD4linux.MPCoverFile2.value = dirdir
 			elif sel == LCD4linux.BildFile:
 				LCD4linux.BildFile.value = dirdir
 			elif sel == LCD4linux.Bild2File:
@@ -7838,6 +7948,7 @@ class UpdateStatus(Screen):
 		self.AutoOFF = 0
 		self.SonosCheckTimer = 0
 		self.YMCastCheckTimer = 0
+		self.BlueCheckTimer = 0
 		self.StandbyChanged = False
 		self.DataMinute = ""
 		self.l4l_info = {}
@@ -7919,6 +8030,13 @@ class UpdateStatus(Screen):
 		self.YMCastSoCoSave = ""
 		self.YMCastPlaytime = 0
 		self.YMCastoldTitle = ""
+		self.BlueInfo = {}
+		self.BlueRunning = False
+		self.BlueSoCo = None
+		self.BlueSoCoSave = ""
+		self.BluePlaytime = 0
+		self.BlueoldTitle = ""
+		self.BlueImage = ""
 		self.oldTitle = ""
 		self.CoverCount = 0
 		self.TunerCallBack=False
@@ -7927,6 +8045,7 @@ class UpdateStatus(Screen):
 		self.TimeZone = "0"
 		self.Long = ""
 		self.Lat = "0"
+		self.ExternalIP = "waiting <1h..."
 		self.WDay=[{},{}]
 		self.WWeek=[[],[]]
 		self.wwwBox = [[""],[""],[""],[""],[""]]
@@ -7980,6 +8099,7 @@ class UpdateStatus(Screen):
 		self.Later6Timer = eTimer()
 		self.SonosTimer = eTimer()
 		self.YMCastTimer = eTimer()
+		self.BlueTimer = eTimer()
 		if DPKG:
 			self.StatusTimer_conn = self.StatusTimer.timeout.connect(self.updateStatus)
 			self.ServiceTimer_conn = self.ServiceTimer.timeout.connect(self.ServiceChange)
@@ -7990,6 +8110,7 @@ class UpdateStatus(Screen):
 			self.Later6Timer_conn = self.Later6Timer.timeout.connect(self.CallLater6)
 			self.SonosTimer_conn = self.SonosTimer.timeout.connect(self.getSonos)
 			self.YMCastTimer_conn = self.YMCastTimer.timeout.connect(self.getYMCast)
+			self.BlueTimer_conn = self.BlueTimer.timeout.connect(self.getBlue)
 		else:
 			self.StatusTimer.callback.append(self.updateStatus)
 			self.ServiceTimer.callback.append(self.ServiceChange)
@@ -8000,7 +8121,7 @@ class UpdateStatus(Screen):
 			self.Later6Timer.callback.append(self.CallLater6)
 			self.SonosTimer.callback.append(self.getSonos)
 			self.YMCastTimer.callback.append(self.getYMCast)
-
+			self.BlueTimer.callback.append(self.getBlue)
 		if GPjukeboxOK == True:
 			CjukeboxEventNotifier.append(self.BPPlayerEvent)
 		if BitrateRegistred == True:
@@ -8030,6 +8151,8 @@ class UpdateStatus(Screen):
 			self.downloadWetter(LCD4linux.Wetter2City.value,1)
 		if str(LCD4linux.StandbyMeteo.value) != "0" or str(LCD4linux.Meteo.value) != "0":
 			self.downloadMeteo()
+		if str(LCD4linux.ExternalIp.value) != "0" or str(LCD4linux.MPExternalIp.value) != "0" or str(LCD4linux.StandbyExternalIp.value) != "0":
+			self.ExternalIP = getExternalIP()
 		self.timerlist = ""
 		self.pluginlist = ""
 
@@ -8170,7 +8293,7 @@ class UpdateStatus(Screen):
 #				else:	
 #					cti = {u'current_transport_status': 'OK', u'current_transport_state': 'STOPPED', u'current_transport_speed': '1'}
 				self.SonosInfo = cti.get("current_transport_state","STOPPED")
-				if self.SonosInfo != "PLAYING":
+				if self.SonosInfo != "PLAYING" or self.SonosSoCo.is_playing_tv:
 					if self.SonosRunning:
 						self.SonosTrack = {}
 						self.SonosSoCo = None
@@ -8185,6 +8308,7 @@ class UpdateStatus(Screen):
 					if self.SonosRunning == False:
 						self.SonosSoCo = None
 					self.SonosRunning = True
+					isMediaPlayer = "sonos"
 					L4log("Sonos running",self.SonosTrack)
 					self.SonosTimer.startLongTimer(int(LCD4linux.SonosTimer.value))
 					self.restartTimer()
@@ -8194,7 +8318,7 @@ class UpdateStatus(Screen):
 				L4log("Sonos Communikation Error")
 				from traceback import format_exc
 				L4log("Error:",format_exc() )
-			L4log("Sonos RunTime: %.3f" % (time()-tt))
+			L4logE("Sonos RunTime: %.3f" % (time()-tt))
 
 	def getYMCast(self):
 		global isMediaPlayer
@@ -8237,7 +8361,8 @@ class UpdateStatus(Screen):
 					if self.YMCastRunning == False:
 						self.YMCastSoCo = None
 					self.YMCastRunning = True
-					L4log("YMC running",self.SonosTrack)
+					isMediaPlayer = "ymc"
+					L4log("YMC running",self.YMCastInfo)
 					self.YMCastTimer.startLongTimer(int(LCD4linux.YMCastTimer.value))
 					self.restartTimer()
 			except:
@@ -8246,7 +8371,61 @@ class UpdateStatus(Screen):
 				L4log("YMC Communikation Error")
 				from traceback import format_exc
 				L4log("Error:",format_exc() )
-			L4log("YMC RunTime: %.3f" % (time()-tt))
+			L4logE("YMC RunTime: %.3f" % (time()-tt))
+
+	def getBlue(self):
+		global isMediaPlayer
+		if LCD4linux.BlueIP.value <> "":
+			tt = time()
+			if self.BlueSoCo == None or self.BlueSoCoSave != LCD4linux.BlueIP.value:
+				self.BlueSoCoSave = LCD4linux.BlueIP.value
+				L4log("BlueSound Connect",LCD4linux.BlueIP.value)
+				try:
+					self.BlueSoCo = BlueSound(LCD4linux.BlueIP.value)
+				except:
+					L4log("BlueSound Connect Error")
+					self.YBlueSoCo = None
+			try:
+				if int(LCD4linux.BluePingTimeout.value) > 0:
+					r = ping.doOne(LCD4linux.BlueIP.value,int(LCD4linux.BluePingTimeout.value)/1000.0)
+					if r == None or r > int(LCD4linux.BluePingTimeout.value)/1000.0:
+						r = ping.doOne(LCD4linux.BlueIP.value,int(LCD4linux.BluePingTimeout.value)/1000.0)
+					if (r == None or r > int(LCD4linux.BluePingTimeout.value)/1000.0) and self.BlueRunning:
+						self.BlueInfo = {}
+						self.BlueRunning = False
+						isMediaPlayer = ""
+						getBilder()
+						L4log("BlueSound Ping Timeout",r)
+						return
+				self.BlueInfo = self.BlueSoCo.getStatus()
+				if self.BlueInfo.get("state","stop") == "stop":
+					if self.BlueRunning:
+						self.BlueInfo = {}
+						self.BlueSoCo = None
+						self.BlueRunning = False
+						isMediaPlayer = ""
+						getBilder()
+						L4log("BlueSound stopped")
+				else:
+					self.BlueImage = self.BlueInfo.get("image","")
+					if self.BlueImage.startswith("/"):
+						self.BlueImage = self.BlueSoCo.baseUrl + self.BlueImage[1:]
+					self.Lvol = self.BlueInfo.get("volume",0)
+					self.LvolM = self.BlueInfo.get("mute",False)
+					if self.BlueRunning == False:
+						self.BlueSoCo = None
+					self.BlueRunning = True
+					isMediaPlayer = "blue"
+					L4log("BlueSound running",self.BlueInfo)
+					self.BlueTimer.startLongTimer(int(LCD4linux.BlueTimer.value))
+					self.restartTimer()
+			except:
+				self.BlueInfo = {}
+				self.BlueRunning = False
+				L4log("BlueSound Communikation Error")
+				from traceback import format_exc
+				L4log("Error:",format_exc() )
+			L4logE("BlueSound RunTime: %.3f" % (time()-tt))
 
 	def getNetatmo(self):
 		if self.NetatmoOK == True:
@@ -8377,7 +8556,7 @@ class UpdateStatus(Screen):
 			FritzTime-=1
 		if self.AutoOFF != -1:
 			self.AutoOFF += 1
-			if Standby.inStandby and not self.SonosRunning and not self.YMCastRunning:
+			if Standby.inStandby and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 				if LCD4linux.StandbyAutoOFF.value != "0" and self.AutoOFF > int(LCD4linux.StandbyAutoOFF.value):
 					self.Refresh="1"
 					self.AutoOFF = -1
@@ -8448,7 +8627,7 @@ class UpdateStatus(Screen):
 					self.SaveStandbyBildfile = 0
 					self.Refresh="1"
 					self.restartTimer()
-		if (str(LCD4linux.ScreenTime.value) != "0" and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning)) or (str(LCD4linux.StandbyScreenTime.value) != "0" and Standby.inStandby):
+		if (str(LCD4linux.ScreenTime.value) != "0" and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning or self.BlueRunning)) or (str(LCD4linux.StandbyScreenTime.value) != "0" and Standby.inStandby):
 			NextScreen(False)
 		elif SaveEventListChanged == False:
 			ScreenActive[0] = LCD4linux.ScreenActive.value
@@ -8491,9 +8670,14 @@ class UpdateStatus(Screen):
 			self.getYMCast()
 		else:
 			self.YMCastCheckTimer += 1
+		if self.BlueCheckTimer >= int(LCD4linux.BlueCheckTimer.value):
+			self.BlueCheckTimer = 0
+			self.getBlue()
+		else:
+			self.BlueCheckTimer += 1
 		if isVideoPlaying !=0:
 			isVideoPlaying+=1
-		if not self.SonosRunning and not self.YMCastRunning:
+		if not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 			volctrl = eDVBVolumecontrol.getInstance()
 			if volctrl:
 				if self.LvolM != volctrl.isMuted():
@@ -8504,7 +8688,7 @@ class UpdateStatus(Screen):
 		if (int(strftime("%M")) % int(LCD4linux.RBoxRefresh.value) == 0 and int(strftime("%S")) > 45 and self.LastwwwBox != strftime("%M")) or self.StandbyChanged != Standby.inStandby:
 			self.LastwwwBox = strftime("%M")
 			if self.NetworkConnectionAvailable or self.NetworkConnectionAvailable == None:
-				if ((str(LCD4linux.RBox.value) != "0" or str(LCD4linux.MPRBox.value) != "0") and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning)) or (str(LCD4linux.StandbyRBox.value) != "0" and Standby.inStandby):
+				if ((str(LCD4linux.RBox.value) != "0" or str(LCD4linux.MPRBox.value) != "0") and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning or self.BlueRunning)) or (str(LCD4linux.StandbyRBox.value) != "0" and Standby.inStandby):
 					if "T" in LCD4linux.RBoxShow.value+LCD4linux.MPRBoxShow.value+LCD4linux.StandbyRBoxShow.value:
 						CType = 1
 					else:
@@ -8513,7 +8697,7 @@ class UpdateStatus(Screen):
 		if (int(strftime("%M")) % int(LCD4linux.RBoxTimerRefresh.value) == 0 and int(strftime("%S")) > 45 and self.LastwwwBoxTimer != strftime("%M")) or self.StandbyChanged != Standby.inStandby:
 			self.LastwwwBoxTimer = strftime("%M")
 			if self.NetworkConnectionAvailable or self.NetworkConnectionAvailable == None:
-				if ((str(LCD4linux.RBoxTimer.value) != "0" or str(LCD4linux.MPRBoxTimer.value) != "0") and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning)) or (str(LCD4linux.StandbyRBoxTimer.value) != "0" and Standby.inStandby):
+				if ((str(LCD4linux.RBoxTimer.value) != "0" or str(LCD4linux.MPRBoxTimer.value) != "0") and (not Standby.inStandby or self.SonosRunning or self.YMCastRunning or self.BlueRunning)) or (str(LCD4linux.StandbyRBoxTimer.value) != "0" and Standby.inStandby):
 					self.downloadwwwBoxTimer([[LCD4linux.RBoxTimerName1.value,0]])
 		if strftime("%M")!=self.DataMinute or BilderTime == 1 or self.StandbyChanged != Standby.inStandby or ConfigMode or (ScreenActive[0] != SaveScreenActive) or isVideoPlaying > 2 or OSDon == 3 or FritzTime > 0 or self.LisRecording != self.session.nav.RecordTimer.isRecording() or self.LisRefresh == True:
 			L4log("Data-Build")
@@ -8527,6 +8711,7 @@ class UpdateStatus(Screen):
 				if int(strftime("%M")) % 5 == 0:
 					self.SonosSoCo = None
 					self.YMCastSoCo = None
+					self.BlueSoCo = None
 				if str(LCD4linux.StandbyWetter.value) != "0" or str(LCD4linux.Wetter.value) != "0" or str(LCD4linux.MPWetter.value) != "0":
 					if strftime("%M") in ("35","40","55") or wwwWetter[0] == "":
 						self.downloadWetter(LCD4linux.WetterCity.value,0)
@@ -8545,6 +8730,8 @@ class UpdateStatus(Screen):
 						else:
 							L4log("Queue full, Thread hanging?")
 				if strftime("%M") == "30":
+					if str(LCD4linux.ExternalIp.value) != "0" or str(LCD4linux.MPExternalIp.value) != "0" or str(LCD4linux.StandbyExternalIp.value) != "0":
+						self.ExternalIP = getExternalIP()
 					DeviceRemove = []
 					try:
 						if len(FritzList)>0:
@@ -8618,7 +8805,7 @@ class UpdateStatus(Screen):
 		self.ServiceChangeRunning = True
 		tt = time()
 		L4logE("Event Service Change")
-		if not self.SonosRunning and not self.YMCastRunning:
+		if not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 			volctrl = eDVBVolumecontrol.getInstance()
 			if volctrl:
 				self.LvolM = volctrl.isMuted()
@@ -8629,7 +8816,7 @@ class UpdateStatus(Screen):
 		self.Ltimer_list = self.recordtimer.timer_list
 		self.LisRecording = self.session.nav.RecordTimer.isRecording()
 		sref = self.session.nav.getCurrentlyPlayingServiceReference()
-		if sref is not None and not self.SonosRunning and not self.YMCastRunning:
+		if sref is not None and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 			self.LsreftoString = sref.toString()
 			if self.LsreftoString is not None:
 				self.LsrefFile = self.LsreftoString[self.LsreftoString.rfind(":")+1:]
@@ -8804,8 +8991,8 @@ class UpdateStatus(Screen):
 					self.LsTagTitle = self.Lchannel_name
 				elif self.LsTagArtist is not None and self.LsTagAlbum is not None and self.LsTagArtist !="" and self.LsTagAlbum != "":
 					self.LsTagTitle = self.LsTagArtist + " - " + self.LsTagTitle
-				pt = self.YMCastInfo.get("play_time",0)
-				tt = self.YMCastInfo.get("total_time",0)
+				pt = int(self.YMCastInfo.get("play_time",0))
+				tt = int(self.YMCastInfo.get("total_time",0))
 				if self.YMCastoldTitle != (self.LsTagTitle+self.LsTagArtist+self.YMCastInfo.get("albumart_url","")) and self.YMCastSoCo != None:
 					rmFile(GoogleCover)
 					self.YMCastPlaytime = pt
@@ -8830,6 +9017,21 @@ class UpdateStatus(Screen):
 					self.Llength = [1,tt*90000]
 					self.Lposition = [1,pt*90000]
 				self.Lpath = "MusicCast" 
+				self.LShortDescription = ""
+				self.LExtendedDescription = ""
+				self.LEventsDesc = None
+			elif self.BlueRunning:
+				self.LsreftoString = "4097:0:0:0:0:0:0:0:0:0:BlueSound"
+				self.Lchannel_name = "BlueSound"
+				self.LsTagAlbum = Code_utf8(self.BlueInfo.get("album",""))
+				self.LsTagArtist = Code_utf8(self.BlueInfo.get("artist",""))
+				self.LsTagTitle = Code_utf8(self.BlueInfo.get("name",""))
+				self.LgetName = self.LsTagTitle
+				pt = int(self.BlueInfo.get("secs",0))
+				tt = int(self.BlueInfo.get("totlen",0))
+				self.Llength = [1,tt*90000]
+				self.Lposition = [1,pt*90000]
+				self.Lpath = "BlueSound" 
 				self.LShortDescription = ""
 				self.LExtendedDescription = ""
 				self.LEventsDesc = None
@@ -9662,18 +9864,18 @@ class UpdateStatus(Screen):
 			self.CoverError = error
 
 	def SonosDownloadFailed(self,result):
-		L4log("Sonos/YMC download failed:",result)
+		L4log("Sonos/YMC/Blue download failed:",result)
 
 	def SonosDownloadFinished(self,filename, result):
 		if os.path.isfile(filename):
 			self.restartTimer()
-			L4log("Sonos/YMC download finished")
+			L4log("Sonos/YMC/Blue download finished")
 		else:
-			L4log("Sonos/YMC download finished, no file found")
+			L4log("Sonos/YMC/Blue download finished, no file found")
 
 	def getSonosPic(self,fn,url):
 		filename=fn
-		L4log("downloading Sonos/YMC from",url)
+		L4log("downloading Sonos/YMC/Blue from",url)
 		downloadPage(url , filename).addCallback(boundFunction(self.SonosDownloadFinished, filename)).addErrback(self.SonosDownloadFailed)
 
 def LCD4linuxPICThread(self,session):
@@ -10089,6 +10291,14 @@ def LCD4linuxPIC(self,session):
 				if url <> "":
 					self.getSonosPic(GoogleCover,str(url))
 			cover = GoogleCover
+		elif self.BlueRunning and self.BlueImage != "":
+			if self.oldTitle != self.LsTagTitle:
+				rmFile(GoogleCover)
+				self.oldTitle = self.LsTagTitle
+				url = self.BlueImage
+				if url <> "":
+					self.getSonosPic(GoogleCover,str(url))
+			cover = GoogleCover
 		elif self.YMCastRunning and self.YMCastInfo.get("albumart_url","") != "" and (LCD4linux.YMCastCover.value == "0" or self.LsTagTitle == "MusicCast"):
 			cover = GoogleCover
 		elif self.LsreftoString is not None and self.LgetName is not None:
@@ -10172,6 +10382,8 @@ def LCD4linuxPIC(self,session):
 					L4log("Title Error",Title)
 			if cover=="" and os.path.isfile("/tmp/.cover"):
 				cover = "/tmp/.cover"
+			if cover=="" and os.path.isfile(LCD4linux.MPCoverFile2.value):
+				cover = LCD4linux.MPCoverFile2.value
 			if cover=="" and LCD4linux.MPCoverPiconFirst.value == True:
 				if WebRadioFSok == True and os.path.isfile(self.l4l_info.get("Logo","")):
 					cover = self.l4l_info.get("Logo","")
@@ -10835,6 +11047,18 @@ def LCD4linuxPIC(self,session):
 
 # String-Text
 	def putString((ConfigPos, ConfigSize, ConfigFont, ConfigAlign, ConfigSplit, ConfigColor, ConfigBackColor, ConfigShadow, ConfigText), draw, im):
+		MAX_W,MAX_H = self.im[im].size
+		current_h=ConfigPos
+		font = ImageFont.truetype(ConfigFont, ConfigSize, encoding='unic')
+		line = Code_utf8(ConfigText.replace('\n',''))
+		w,h = self.draw[draw].textsize(line, font=font)
+		POSX = getSplit(ConfigSplit,ConfigAlign,MAX_W,w)
+		if ConfigBackColor != "0":
+			self.draw[draw].rectangle((POSX, current_h,POSX+w, current_h+h),fill=ConfigBackColor)
+		ShadowText(draw,POSX,current_h,line,font,ConfigColor,ConfigShadow)
+
+# external IP Address
+	def putExternalIP((ConfigPos, ConfigSize, ConfigFont, ConfigAlign, ConfigSplit, ConfigColor, ConfigBackColor, ConfigShadow, ConfigText), draw, im):
 		MAX_W,MAX_H = self.im[im].size
 		current_h=ConfigPos
 		font = ImageFont.truetype(ConfigFont, ConfigSize, encoding='unic')
@@ -11721,7 +11945,7 @@ def LCD4linuxPIC(self,session):
 						MinusProgress = (w+10)
 						ShadowText(draw,ProgressBar-MinusProgress+15+POSX, ConfigPos+1-Minus-int((h-ConfigSize)/2),remaining,font,ConfigColorText,ConfigShadow)
 						ShadowText(draw,POSX+10, ConfigPos+1-Minus-int((h-ConfigSize)/2),remaining1,font,ConfigColorText,ConfigShadow)
-					event_run = int(ProgressBar*event_run/duration)
+					event_run = 0 if duration == 0 else int(ProgressBar*event_run/duration)
 					isData = True
 #					print event_begin, event_end, event.getDuration(), event.getPlayPosition()
 			if isData == True and ConfigBorder is not "off":
@@ -12134,15 +12358,22 @@ def LCD4linuxPIC(self,session):
 				i += " %d%s" % (self.LbitErrorRate,NL(ConfigLines))
 #			print "%d" % (feinfo.getFrontendInfo(iFrontendInformation.signalPower))
 		if "T" in ConfigInfo:
-			m1 = 0
 			if os.path.exists("/proc/stb/sensors"):
+				m1 = 0
 				for dirname in os.listdir("/proc/stb/sensors"):
 					if dirname.find("temp", 0, 4) == 0:
 						if os.path.isfile("/proc/stb/sensors/%s/value" % dirname) == True:
 							tt = SensorRead("/proc/stb/sensors/%s/value" % dirname)
 							if m1 < tt:
 								m1 = tt
-			i += " %d\xb0C%s" % (m1,NL(ConfigLines))
+				if m1 != 0:
+					i += " %d\xb0C%s" % (m1,NL(ConfigLines))
+			if os.path.isfile("/sys/class/thermal/thermal_zone0/temp"):
+				try:
+					line = open("/sys/class/thermal/thermal_zone0/temp").readline().strip()
+					i += " %.1f\xb0C%s" % (int(line)/1000.0,NL(ConfigLines))
+				except:
+					L4logE("Error read Temp")
 		if "R" in ConfigInfo:
 			if os.path.isfile("/proc/stb/fp/fan_speed"):
 				value = SensorRead("/proc/stb/fp/fan_speed")
@@ -13743,6 +13974,9 @@ def LCD4linuxPIC(self,session):
 			elif self.YMCastRunning:
 				L4log("detected YMC")
 				isMediaPlayer = "ymc"
+			elif self.BlueRunning:
+				L4log("detected BlueSound")
+				isMediaPlayer = "blue"
 			elif sref.startswith("1:0:2") is True:
 				L4log("detected Radio")
 				isMediaPlayer = "radio"
@@ -13770,7 +14004,7 @@ def LCD4linuxPIC(self,session):
 	L4LElist.setResolution(1,MAX_W,MAX_H)
 	pil_open = ""
 	col_back = "black"
-	if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning:
+	if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 		pil_open = LCD4linux.StandbyLCDBild1.value
 		col_back = LCD4linux.StandbyLCDColor1.value
 		if ScreenActive[0] in LCD4linux.StandbyBackground1.value and "1" in LCD4linux.StandbyBackground1LCD.value:
@@ -13827,7 +14061,7 @@ def LCD4linuxPIC(self,session):
 		L4LElist.setResolution(2,MAX_W,MAX_H)
 		pil_open = ""
 		col_back = "black"
-		if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning:
+		if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 			pil_open = LCD4linux.StandbyLCDBild2.value
 			col_back = LCD4linux.StandbyLCDColor2.value
 			if ScreenActive[0] in LCD4linux.StandbyBackground1.value and "2" in LCD4linux.StandbyBackground1LCD.value:
@@ -13886,7 +14120,7 @@ def LCD4linuxPIC(self,session):
 		L4LElist.setResolution(3,MAX_W,MAX_H)
 		pil_open = ""
 		col_back = "black"
-		if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning:
+		if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 			pil_open = LCD4linux.StandbyLCDBild3.value
 			col_back = LCD4linux.StandbyLCDColor3.value
 			if ScreenActive[0] in LCD4linux.StandbyBackground1.value and "3" in LCD4linux.StandbyBackground1LCD.value:
@@ -13945,7 +14179,7 @@ def LCD4linuxPIC(self,session):
 ####
 #### Standby Modus
 ####
-	if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning:
+	if (Standby.inStandby or ConfigStandby) and not self.SonosRunning and not self.YMCastRunning and not self.BlueRunning:
 		if str(LCD4linux.Standby.value) == "1":
 			if LCD4linux.LCDType1.value[0] == "4" or LCD4linux.LCDType2.value[0] == "4" or LCD4linux.LCDType3.value[0] == "4":
 				if "C" in LCD4linux.LCDTFT.value:
@@ -14045,6 +14279,9 @@ def LCD4linuxPIC(self,session):
 # Online-Ping
 				Para = LCD4linux.StandbyPingPos.value, LCD4linux.StandbyPingSize.value, LCD4linux.StandbyPingAlign.value, LCD4linux.StandbyPingSplit.value, LCD4linux.StandbyPingColor.value, LCD4linux.StandbyPingType.value, LCD4linux.StandbyPingShow.value, LCD4linux.StandbyPingTimeout.value, (LCD4linux.StandbyPingName1.value,LCD4linux.StandbyPingName2.value,LCD4linux.StandbyPingName3.value,LCD4linux.StandbyPingName4.value,LCD4linux.StandbyPingName5.value), LCD4linux.StandbyPingShadow.value,getFont(LCD4linux.StandbyPingFont.value)
 				Lput(LCD4linux.StandbyPingLCD.value,LCD4linux.StandbyPing.value,putOnline,Para)
+# external IP
+				Para = LCD4linux.StandbyExternalIpPos.value,LCD4linux.StandbyExternalIpSize.value,getFont(LCD4linux.StandbyExternalIpFont.value),LCD4linux.StandbyExternalIpAlign.value,LCD4linux.StandbyExternalIpSplit.value,LCD4linux.StandbyExternalIpColor.value,LCD4linux.StandbyExternalIpBackColor.value,LCD4linux.StandbyExternalIpShadow.value, self.ExternalIP
+				Lput(LCD4linux.StandbyExternalIpLCD.value,LCD4linux.StandbyExternalIp.value,putExternalIP,Para)
 # www Remote-Box
 				Para = LCD4linux.StandbyRBoxPos.value, LCD4linux.StandbyRBoxSize.value, LCD4linux.StandbyRBoxAlign.value, False, [LCD4linux.StandbyRBoxColor.value,LCD4linux.StandbyRBoxColor2.value,LCD4linux.StandbyRBoxColor3.value,LCD4linux.StandbyRBoxColor4.value,LCD4linux.StandbyRBoxColor5.value], LCD4linux.StandbyRBoxProzent.value, LCD4linux.StandbyRBoxShow.value, LCD4linux.StandbyRBoxShadow.value,getFont(LCD4linux.StandbyRBoxFont.value)
 				Lput(LCD4linux.StandbyRBoxLCD.value,LCD4linux.StandbyRBox.value,putRemoteBox,Para)
@@ -14223,6 +14460,9 @@ def LCD4linuxPIC(self,session):
 # Online-Ping
 			Para = LCD4linux.MPPingPos.value, LCD4linux.MPPingSize.value, LCD4linux.MPPingAlign.value, LCD4linux.MPPingSplit.value, LCD4linux.MPPingColor.value, LCD4linux.MPPingType.value, LCD4linux.MPPingShow.value, LCD4linux.MPPingTimeout.value, (LCD4linux.MPPingName1.value,LCD4linux.MPPingName2.value,LCD4linux.MPPingName3.value,LCD4linux.MPPingName4.value,LCD4linux.MPPingName5.value), LCD4linux.MPPingShadow.value,getFont(LCD4linux.MPPingFont.value)
 			Lput(LCD4linux.MPPingLCD.value,LCD4linux.MPPing.value,putOnline,Para)
+# external IP
+			Para = LCD4linux.MPExternalIpPos.value,LCD4linux.MPExternalIpSize.value,getFont(LCD4linux.MPExternalIpFont.value),LCD4linux.MPExternalIpAlign.value,LCD4linux.MPExternalIpSplit.value,LCD4linux.MPExternalIpColor.value,LCD4linux.MPExternalIpBackColor.value,LCD4linux.MPExternalIpShadow.value, self.ExternalIP
+			Lput(LCD4linux.MPExternalIpLCD.value,LCD4linux.MPExternalIp.value,putExternalIP,Para)
 # www Remote-Box
 			Para = LCD4linux.MPRBoxPos.value, LCD4linux.MPRBoxSize.value, LCD4linux.MPRBoxAlign.value, False, [LCD4linux.MPRBoxColor.value,LCD4linux.MPRBoxColor2.value,LCD4linux.MPRBoxColor3.value,LCD4linux.MPRBoxColor4.value,LCD4linux.MPRBoxColor5.value], LCD4linux.MPRBoxProzent.value, LCD4linux.MPRBoxShow.value, LCD4linux.MPRBoxShadow.value,getFont(LCD4linux.MPRBoxFont.value)
 			Lput(LCD4linux.MPRBoxLCD.value,LCD4linux.MPRBox.value,putRemoteBox,Para)
@@ -14433,6 +14673,9 @@ def LCD4linuxPIC(self,session):
 # Online-Ping
 			Para = LCD4linux.PingPos.value, LCD4linux.PingSize.value, LCD4linux.PingAlign.value, LCD4linux.PingSplit.value, LCD4linux.PingColor.value, LCD4linux.PingType.value, LCD4linux.PingShow.value, LCD4linux.PingTimeout.value, (LCD4linux.PingName1.value,LCD4linux.PingName2.value,LCD4linux.PingName3.value,LCD4linux.PingName4.value,LCD4linux.PingName5.value), LCD4linux.PingShadow.value,getFont(LCD4linux.PingFont.value)
 			Lput(LCD4linux.PingLCD.value,LCD4linux.Ping.value,putOnline,Para)
+# external IP
+			Para = LCD4linux.ExternalIpPos.value,LCD4linux.ExternalIpSize.value,getFont(LCD4linux.ExternalIpFont.value),LCD4linux.ExternalIpAlign.value,LCD4linux.ExternalIpSplit.value,LCD4linux.ExternalIpColor.value,LCD4linux.ExternalIpBackColor.value,LCD4linux.ExternalIpShadow.value, self.ExternalIP
+			Lput(LCD4linux.ExternalIpLCD.value,LCD4linux.ExternalIp.value,putExternalIP,Para)
 # www Remote-Box
 			Para = LCD4linux.RBoxPos.value, LCD4linux.RBoxSize.value, LCD4linux.RBoxAlign.value, False, [LCD4linux.RBoxColor.value,LCD4linux.RBoxColor2.value,LCD4linux.RBoxColor3.value,LCD4linux.RBoxColor4.value,LCD4linux.RBoxColor5.value], LCD4linux.RBoxProzent.value, LCD4linux.RBoxShow.value, LCD4linux.RBoxShadow.value,getFont(LCD4linux.RBoxFont.value)
 			Lput(LCD4linux.RBoxLCD.value,LCD4linux.RBox.value,putRemoteBox,Para)
@@ -14690,7 +14933,7 @@ def autostart(reason, **kwargs):
 		MJPEG_stop(9)
 
 def setup(menuid, **kwargs):
-	if getImageDistro() in ("openvix", "openatv", "ventonsupport", "egami", "openhdf", "openbh", "openspa", "opendroid"):
+	if getImageDistro() in ("openvix", "openatv", "egami", "openhdf", "openbh", "openspa", "opendroid"):
 		if menuid == "display" and SystemInfo["Display"]:
 			return [("LCD4Linux", main, "lcd4linux", None)]
 		elif menuid == "system" and not SystemInfo["Display"]:
@@ -14718,6 +14961,7 @@ def Plugins(**kwargs):
 	where = PluginDescriptor.WHERE_PLUGINMENU,
 	fnc = main,
 	icon = "plugin.png"))
+
 	list.append(PluginDescriptor(name=_("LCD4linux Screen Switch"), 
 	description=_("LCD4linux Screen Switch"), 
 	where = PluginDescriptor.WHERE_EXTENSIONSMENU,

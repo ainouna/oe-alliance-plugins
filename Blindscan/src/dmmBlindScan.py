@@ -66,6 +66,7 @@ class SatBlindscanState(Screen):
 		Screen.__init__(self, session)
 		self.setup_title = _("Blind scan state")
 		Screen.setTitle(self, _(self.setup_title))
+		self.skinName = ["SatBlindscanState2"]
 		self["list"]=List()
 		self["text"]=Label()
 		self["text"].setText(text)
@@ -96,15 +97,15 @@ class SatBlindscanState(Screen):
 		elif self.post_action != -1:
 			self.post_action ^= 1
 			if self.post_action:
-				self["post_action"].setText(_("MANUALLY start service searching, press green to change"))
+				self["post_action"].setText(_("MANUALLY start service searching, press green to change."))
 			else:
-				self["post_action"].setText(_("AUTOMATICALLY start service searching, press green to change"))
+				self["post_action"].setText(_("AUTOMATICALLY start service searching, press green to change."))
 
 	def setFinished(self):
 		if self.post_action:
 			self.finished=1
 			self["text"].setText(_("Transponder searching finished!"))
-			self["post_action"].setText(_("Press green to start service searching!"))
+			self["post_action"].setText(_("Press green to start service searching."))
 		else:
 			self.close(True)
 
@@ -250,6 +251,8 @@ class SatelliteTransponderSearchSupport:
 					if parm.system == eDVBFrontendParametersSatellite.System_DVB_S2:
 						parm.rolloff = d["rolloff"]
 						parm.pilot = d["pilot"]
+						parm.is_id = d["is_id"]
+						parm.pls_mode = d["pls_mode"]
 					self.__tlist.append(parm)
 					if self.auto_scan:
 						print "LOCKED at", freq
@@ -354,6 +357,8 @@ class SatelliteTransponderSearchSupport:
 				parm.system = self.scan_sat.bs_system.value
 				parm.pilot = eDVBFrontendParametersSatellite.Pilot_Unknown
 				parm.rolloff = eDVBFrontendParametersSatellite.RollOff_alpha_0_35
+				parm.pls_mode = eDVBFrontendParametersSatellite.PLS_Gold
+				parm.is_id = eDVBFrontendParametersSatellite.No_Stream_Id_Filter
 			else:
 				steps = 4000
 				parm.system = eDVBFrontendParametersSatellite.System_DVB_S
@@ -430,7 +435,7 @@ class SatelliteTransponderSearchSupport:
 						self.session.open(MessageBox, text, MessageBox.TYPE_ERROR)
 						return
 
-			band_cutoff_frequency = 11700000
+			band_cutoff_frequency = 11700001
 
 			s1 = self.scan_sat.bs_freq_start.value * 1000
 			s2 = self.scan_sat.bs_freq_stop.value * 1000
@@ -542,7 +547,7 @@ class DmmBlindscan(ConfigListScreen, Screen, TransponderSearchSupport, Satellite
 		ConfigListScreen.__init__(self, self.list)
 		if not self.scan_nims.value == "":
 			self.createSetup()
-			self["introduction"] = Label(_("Press OK to start the scan"))
+			self["introduction"] = Label(_("Press OK to start the scan."))
 		else:
 			self["introduction"] = Label(_("Nothing to scan!\nPlease setup your tuner settings before you start a service scan."))
 
@@ -661,20 +666,21 @@ class DmmBlindscan(ConfigListScreen, Screen, TransponderSearchSupport, Satellite
 		for n in nimmanager.nim_slots:
 			if hasattr(n, 'isFBCLink') and n.isFBCLink():
 				continue
-			if not self.legacy:
-				config = n.config.dvbs
-			else:
-				config = n.config
-			config_mode = config.configMode.value
-			if config_mode == "nothing":
-				continue
+			if n.isCompatible("DVB-S"):
+				if not self.legacy:
+					nimconfig = n.config.dvbs
+				else:
+					nimconfig = n.config
+				config_mode = nimconfig.configMode.value
+				if config_mode == "nothing":
+					continue
 			if n.isCompatible("DVB-S") and len(nimmanager.getSatListForNim(n.slot)) < 1:
 				if config_mode in ("advanced", "simple"):
 					config.Nims[n.slot].configMode.value = "nothing"
 					config.Nims[n.slot].configMode.save()
 				continue
-			if config_mode in ("loopthrough", "satposdepends"):
-				root_id = nimmanager.sec.getRoot(n.slot_id, int(config.connectedTo.value))
+			if n.isCompatible("DVB-S") and config_mode in ("loopthrough", "satposdepends"):
+				root_id = nimmanager.sec.getRoot(n.slot_id, int(nimconfig.connectedTo.value))
 				if n.type == nimmanager.nim_slots[root_id].type: # check if connected from a DVB-S to DVB-S2 Nim or vice versa
 					continue
 			if n.isCompatible("DVB-S"):
@@ -805,7 +811,7 @@ class DmmBlindscan(ConfigListScreen, Screen, TransponderSearchSupport, Satellite
 		self.session.nav.playService(self.session.postScanService)
 		for x in self["config"].list:
 			x[1].cancel()
-		self.close()
+		self.close(True)
 
 	def startScanCallback(self, answer=True):
 		if answer:

@@ -1,0 +1,45 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: enigma2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-07-30 19:14+0200\n"
+"PO-Revision-Date: 2018-10-14 21:58+0200\n"
+"Last-Translator: Manfred Aabye <openmanniland@gmx.de>\n"
+"Language-Team: Deutsch <> j-ot&Trial\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 2.2\n"
+"X-Poedit-SourceCharset: iso-8859-15\n"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "FAN Control"
+msgstr "Lüftersteuerung"
+
+msgid "Fan Control"
+msgstr "Lüfterkontrolle"
+
+msgid "Fan mode"
+msgstr "Lüfter Modus"
+
+msgid "Fan setup"
+msgstr "Lüfter Einstellung"
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "On"
+msgstr "An"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "switch Fan On/Off"
+msgstr "Schalter Lüfter ein/aus"

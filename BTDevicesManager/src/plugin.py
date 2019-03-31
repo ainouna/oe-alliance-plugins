@@ -32,9 +32,11 @@ from Components.Sources.StaticText import StaticText
 from Components.ActionMap import NumberActionMap, ActionMap
 from Components.config import config, ConfigSelection, getConfigListEntry, ConfigText, ConfigSubsection, ConfigYesNo, ConfigSelection
 from Components.MenuList import MenuList
-from Tools.Directories import fileExists
+from Tools.Directories import resolveFilename, SCOPE_PLUGINS, SCOPE_CURRENT_PLUGIN, fileExists
+from bluetoothctl import iBluetoothctl, Bluetoothctl
 
 import os
+import time
 
 brandoem = getBrandOEM()
 
@@ -101,6 +103,10 @@ class TaskManager:
 
 config.btdevicesmanager = ConfigSubsection()
 config.btdevicesmanager.autostart = ConfigYesNo(default=False)
+config.btdevicesmanager.audioconnect = ConfigYesNo(default=False)
+config.btdevicesmanager.audioaddress = ConfigText(default = "", fixed_size = False)
+
+commandconnect = resolveFilename(SCOPE_CURRENT_PLUGIN, "Extensions/BTDevicesManager/BTAudioConnect")
 
 class BluetoothDevicesManagerSetup(ConfigListScreen, Screen):
 	__module__ = __name__
@@ -111,6 +117,8 @@ class BluetoothDevicesManagerSetup(ConfigListScreen, Screen):
 			
 		list = []
 		list.append(getConfigListEntry(_('Autostart'), config.btdevicesmanager.autostart))
+		list.append(getConfigListEntry(_('Audio Connect'), config.btdevicesmanager.audioconnect))
+		list.append(getConfigListEntry(_('Audio Address'), config.btdevicesmanager.audioaddress))
 
 		self["key_red"] = Label(_("Exit"))
 		self["key_green"] = Label(_("Save"))
@@ -126,13 +134,21 @@ class BluetoothDevicesManagerSetup(ConfigListScreen, Screen):
 	def saveAndExit(self):
 		for x in self['config'].list:
 			x[1].save()
-		if config.btdevicesmanager.autostart.getValue():
-			print "[BluetoothManager] Autostart: Loading driver"
-			os.system("modprobe rtk_btusb")
-		else:
-			print "[BluetoothManager] Autostart: Unloading driver"
-			os.system("rmmod rtk_btusb")
-		
+
+		if brandoem not in ("xcore","edision"):
+			if config.btdevicesmanager.autostart.getValue():
+				print "[BluetoothManager] Autostart: Loading driver"
+				os.system("modprobe rtk_btusb")
+			else:
+				print "[BluetoothManager] Autostart: Unloading driver"
+				os.system("rmmod rtk_btusb")
+
+		if brandoem in ("xcore","edision"):
+			if config.btdevicesmanager.audioconnect.getValue():
+				os.system("%s %s" % (commandconnect, config.btdevicesmanager.audioaddress.getValue()))
+			else:
+				os.system("%s" % commandconnect)
+
 		config.btdevicesmanager.save()
 		
 		self.close()
@@ -163,15 +179,9 @@ class BluetoothDevicesManager(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		Screen.setTitle(self, _("Bluetooth Devices Manager"))
-		
+
 		self.taskManager = TaskManager()
-		
-		self["ConnStatus"] = Label(_("Please load BT driver by pressing BLUE button."))
-		
-		if config.btdevicesmanager.autostart.getValue():
-			self.initDevice()
-			self["ConnStatus"] = Label(_("No connected to any device"))
-		
+
 		self["actions"]  = ActionMap(["OkCancelActions","WizardActions", "ColorActions", "SetupActions", "NumberActions", "MenuActions"], {
 			"ok"    : self.keyOK,
 			"cancel": self.keyCancel,
@@ -184,23 +194,27 @@ class BluetoothDevicesManager(Screen):
 		self["key_red"]    = Label(_("Exit"))
 		self["key_green"]  = Label(_("(Re)Scan"))
 		self["key_yellow"] = Label(_("Connect"))
-		if brandoem == 'xcore':
-			self["key_blue"]   = Label()
-		else:
-			self["key_blue"]   = Label(_("Config"))
+		self["key_blue"]   = Label(_("Config"))
+
+		self["ConnStatus"] = Label(_("No connected to any device"))
     
 		self.devicelist = []
 		self["devicelist"] = MenuList(self.devicelist)
 
+		if config.btdevicesmanager.autostart.getValue():
+			self.initDevice()
+		if brandoem in ("xcore","edision"):
+			self.initDevice()
+			self.showConnections()
+
+		self.refreshStatusTimer = eTimer()
+		self.refreshStatusTimer.callback.append(self.cbRefreshStatus)
+		self.cb_mac_address = None
+		self.cb_name = None
+
 	def initDevice(self):
 		print "[BluetoothManager] initDevice"
 		cmd = "hciconfig hci0 up"
-		if getBoxType() in ("spycat4k","spycat4kcombo"):
-			cmd = "hciattach ttyS1 qca | hciconfig hci0 up"
-		if getMachineBuild() in ("xc7346") or getBoxType() in ("spycat4kmini"):
-			cmd = "hciattach ttyS1 rtk_h5 | hciconfig hci0 up"
-		if getMachineBuild() in ("xc7362") or getBoxType() in ("osnino"):
-			cmd = "hciattach ttyS2 rtk_h5 | hciconfig hci0 up"
 		self.taskManager.append(cmd, self.cbPrintAvailBTDev, self.cbRunNextTask)
 		cmd = "hcitool dev" ## check if hci0 is on the dev list, then make scan
 		self.taskManager.append(cmd, self.cbPrintAvailBTDev, self.cbStopDone)
@@ -216,7 +230,7 @@ class BluetoothDevicesManager(Screen):
 			
 	def keyGreen(self):
 		print "[BluetoothManager] keyGreen"  
-		if config.btdevicesmanager.autostart.getValue() or  brandoem in ("xcore","edision"):
+		if config.btdevicesmanager.autostart.getValue() or brandoem in ("xcore","edision"):
 			self["ConnStatus"].setText(_("No connected to any device"))
 			self.initDevice()
 		else:
@@ -234,7 +248,7 @@ class BluetoothDevicesManager(Screen):
 		cmd = 'hcitool scan'
 		self.taskManager.append(cmd, self.cbPrintAvailDevices, self.cbRunNextTask)
 		self.taskManager.next()
-		
+
 	def cbPrintAvailDevices(self, data):
 		print "[BluetoothManager] cbPrintAvailDevices"
 		
@@ -259,9 +273,22 @@ class BluetoothDevicesManager(Screen):
 		
 	def showConnections(self):
 		print "[BluetoothManager] showConnections"
-		cmd = "hidd --show"
-		self.taskManager.append(cmd, self.cbPrintCurrentConnections, self.cbStopDone)
-		self.taskManager.next()
+		if brandoem not in ("xcore","edision"):
+			cmd = "hidd --show"
+			self.taskManager.append(cmd, self.cbPrintCurrentConnections, self.cbStopDone)
+			self.taskManager.next()
+		else:
+			paired_devices = iBluetoothctl.get_paired_devices()
+			if paired_devices is not None:
+				for d in paired_devices:
+					if d is not None:
+						mac_address = d['mac_address']
+						name = d['name']
+						msg = _("Connection with:\n") + name + " (" + mac_address + ")"
+						self["ConnStatus"].setText(msg)
+						self["key_yellow"].setText(_("Disconnect"))
+			else:
+				self["ConnStatus"].setText(_("No connected to any device"))
 			
 	def cbPrintCurrentConnections(self, data):
 		print "[BluetoothManager] cbPrintCurrentConnections"
@@ -269,15 +296,52 @@ class BluetoothDevicesManager(Screen):
 		self["ConnStatus"].setText(msg)
 		self["key_yellow"].setText(_("Disconnect"))
 		
+	def cbRefreshStatus(self):
+		self.refreshStatusTimer.stop()
+		mac_address = self.cb_mac_address
+		name = self.cb_name
+		try:
+			ret = iBluetoothctl.connect(mac_address)
+			if ret is False:
+				msg = _("Can't not pair with selected device!")
+				self["ConnStatus"].setText(msg)
+			else:
+				iBluetoothctl.trust(mac_address)
+				msg = _("Connection with:\n") + name + " (" + mac_address + ")"
+				self["ConnStatus"].setText(msg)
+				self["key_yellow"].setText(_("Disconnect"))
+		except:
+			msg = _("Can't not pair with selected device!")
+			self["ConnStatus"].setText(msg)
+
 	def keyYellow(self):
 		if self["key_yellow"].getText() == _('Disconnect'):
 			print "[BluetoothManager] Disconnecting"
-			cmd = "hidd --killall"
-			rc = os.system(cmd)
-			if not rc:
-				self["ConnStatus"].setText(_("No connected to any device"))
-				self["key_yellow"].setText(_("Connect"))
-			self.showConnections()
+			if brandoem not in ("xcore","edision"):
+				cmd = "hidd --killall"
+				rc = os.system(cmd)
+				if not rc:
+					self["ConnStatus"].setText(_("No connected to any device"))
+					self["key_yellow"].setText(_("Connect"))
+				self.showConnections()
+			else:
+				paired_devices = iBluetoothctl.get_paired_devices()
+				if paired_devices is not None:
+					for d in paired_devices:
+						if d is not None:
+							mac_address = d['mac_address']
+							name = d['name']
+							try:
+								iBluetoothctl.remove(mac_address)
+							except:
+								pass
+							try:
+								iBluetoothctl.disconnect(mac_address)
+							except:
+								pass
+							msg = _("Disconnect with:\n") + name + " (" + mac_address + ")"
+							self["ConnStatus"].setText(msg)
+							self["key_yellow"].setText(_("Connect"))
 		else:
 			print "[BluetoothManager] Connecting"
 			selectedItem = self["devicelist"].getCurrent()
@@ -288,16 +352,56 @@ class BluetoothDevicesManager(Screen):
 			msg = _("Trying to pair with:") + " " + selectedItem[1]
 			self["ConnStatus"].setText(msg)
 			
-			cmd = "hidd --connect " + selectedItem[1]
-			self.taskManager.append(cmd, self.cbPrintAvailConnections, self.cbRunNextTask)
-			cmd = "hidd --show"
-			rc = os.system(cmd)
-			if rc:
-				print "[BluetoothManager] can NOT connect with: ", selectedItem[1]
-				msg = _("Can't not pair with selected device!")
-				self["ConnStatus"].setText(msg)
-			self.taskManager.append(cmd, self.cbPrintCurrentConnections, self.cbStopDone)
-			self.taskManager.next()
+			if brandoem not in ("xcore","edision"):
+				cmd = "hidd --connect " + selectedItem[1]
+				self.taskManager.append(cmd, self.cbPrintAvailConnections, self.cbRunNextTask)
+				cmd = "hidd --show"
+				rc = os.system(cmd)
+				if rc:
+					print "[BluetoothManager] can NOT connect with: ", selectedItem[1]
+					msg = _("Can't not pair with selected device!")
+					self["ConnStatus"].setText(msg)
+				self.taskManager.append(cmd, self.cbPrintCurrentConnections, self.cbStopDone)
+				self.taskManager.next()
+			else:
+				mac_address = None
+				name = None
+				iBluetoothctl.pairable_on()
+				iBluetoothctl.start_scan()
+				for i in range(0, 20):
+					time.sleep(0.5)
+					available_devices = iBluetoothctl.get_available_devices()
+					if available_devices is not None:
+						for d in available_devices:
+							if selectedItem[1] in str(d):
+								mac_address = d['mac_address']
+								name = d['name']
+					if mac_address is not None:
+						break
+
+				if mac_address is not None:
+					iBluetoothctl.agent_noinputnooutput()
+					iBluetoothctl.default_agent()
+					ret = iBluetoothctl.pair(mac_address)
+					if config.btdevicesmanager.audioaddress.getValue() is "":
+						config.btdevicesmanager.audioaddress.setValue(mac_address)
+					if ret is False:
+						if iBluetoothctl.passkey is not None:
+							self.cb_mac_address = mac_address
+							self.cb_name = name
+							msg = _("Please Enter Passkey: \n") + iBluetoothctl.passkey
+							self["ConnStatus"].setText(msg)
+							self.refreshStatusTimer.start(10000, True)
+					else:
+						iBluetoothctl.trust(mac_address)
+						ret = iBluetoothctl.connect(mac_address)
+						msg = _("Connection with:\n") + name + " (" + mac_address + ")"
+						self["ConnStatus"].setText(msg)
+						self["key_yellow"].setText(_("Disconnect"))
+				else:
+					print "[BluetoothManager] can NOT connect with: ", selectedItem[1]
+					msg = _("Can't not pair with selected device!")
+					self["ConnStatus"].setText(msg)
 
 	def cbPrintAvailConnections(self, data):
 		print "[BluetoothManager] cbPrintAvailConnections"
@@ -307,9 +411,8 @@ class BluetoothDevicesManager(Screen):
 			self["ConnStatus"].setText(msg)
 			
 	def keyBlue(self):
-		if brandoem != 'xcore':
-			print "[BluetoothManager] keyBlue"
-			self.session.openWithCallback(self.keyGreen, BluetoothDevicesManagerSetup)
+		print "[BluetoothManager] keyBlue"
+		self.session.openWithCallback(self.keyGreen, BluetoothDevicesManagerSetup)
 
 	def showMessage(self,msg):
 		self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, 3)
@@ -342,14 +445,18 @@ def main(session, **kwargs):
 	session.open(BluetoothDevicesManager)
 
 def autostart(reason, **kwargs):
-	if brandoem not in ("xcore","edision"):
-		if reason == 0:
+	if reason == 0:
+		if brandoem not in ("xcore","edision"):
 			if config.btdevicesmanager.autostart.getValue():
 				print "[BluetoothManager] Autostart: Loading driver" ## We have it on a blacklist because We want to have faster system loading, so We load driver while we enable it.
 				os.system("modprobe rtk_btusb")
 			else:
 				print "[BluetoothManager] Autostart: Unloading driver" ## We know it is blacklisted, but try to remove it anyway.
 				os.system("rmmod rtk_btusb")
+
+		if brandoem in ("xcore","edision"):
+			if config.btdevicesmanager.audioconnect.getValue():
+				os.system("%s %s" % (commandconnect, config.btdevicesmanager.audioaddress.getValue()))
 
 def Plugins(**kwargs):
 	ShowPlugin = True

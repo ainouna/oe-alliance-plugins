@@ -26,6 +26,14 @@ if DREAMBOX
 SUBDIRS +=  DMBlindscan
 endif
 
+if DINOBOT
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if CC1
+SUBDIRS += MultiTransCodingSetup
+endif
+
 if XTREND
 SUBDIRS += XtrendFancontrol
 endif
@@ -194,6 +202,22 @@ if S7400S
 SUBDIRS += F3LEDControl
 endif
 
+if SF8008
+SUBDIRS += MultiTransCodingSetup VPLEDControl
+endif
+
+if GBMV200
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if USTYM4KPRO
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if BEYONWIZV2
+SUBDIRS += MultiTransCodingSetup
+endif
+
 if S8100S
 SUBDIRS += MultiTransCodingSetup
 endif
@@ -215,6 +239,22 @@ SUBDIRS += F3LEDControl
 endif
 
 if H9
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if H9COMBO
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if HD60
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if HD61
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if I55PLUS
 SUBDIRS += MultiTransCodingSetup
 endif
 
@@ -270,6 +310,18 @@ if VUULTIMO4K
 SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
 endif
 
+if VUDUO4K
+SUBDIRS += FirmwareUpgrade VuRemote TransCodingSetup
+endif
+
+if V8PLUS
+SUBDIRS += MultiTransCodingSetup
+endif
+
+if MULTIBOX
+SUBDIRS += MultiTransCodingSetup
+endif
+
 if GIGABLUE
 SUBDIRS += GigaBlueVFDControl AudioEffect GigaBlueRemote
 endif
@@ -280,6 +332,10 @@ endif
 
 if SPARK
 SUBDIRS += SparkVFDControl SparkUnionTunerType SH4BoosterControl SH4OSDAdjustment
+endif
+
+if OSMIO4K
+SUBDIRS += SimpleFancontrol
 endif
 
 

@@ -26,3 +26,11 @@ endif
 if HAVE_ARMV7AHF
 SUBDIRS += armv7ahf
 endif
+
+if HAVE_AARCH64
+SUBDIRS += aarch64
+endif
+
+if DINOBOT
+SUBDIRS += dinobot
+endif
