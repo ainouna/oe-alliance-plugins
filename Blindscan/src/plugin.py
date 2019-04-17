@@ -892,8 +892,9 @@ class Blindscan(ConfigListScreen, Screen):
 			else:
 				self.session.open(MessageBox, _("Blindscan executable not found '%s'!") % exe_path, MessageBox.TYPE_ERROR)
 				return
-		elif getBrandOEM() in ('azbox', 'ceryon', 'clap', 'dinobot', 'gigablue', 'ini', 'home', 'uclan', 'vuplus', 'xtrend') or getBoxType().startswith('sf8008'):
+		elif getBrandOEM() in ('azbox', 'ceryon', 'amiko', 'clap', 'dinobot', 'gigablue', 'ini', 'home', 'uclan', 'vuplus', 'xtrend') or getBoxType().startswith('sf8008'):
 			exe_filename = getBrandOEM() == 'azbox' and "avl_azbox_blindscan" or \
+							getBrandOEM() == 'amiko' and "amiko-blindscan" or \
 							getBrandOEM() == 'ceryon' and "ceryon_blindscan" or \
 							getBrandOEM() == 'clap' and "clap_blindscan" or \
 							getBrandOEM() == 'dinobot' and "dinobot-blindscan" or \
@@ -906,15 +907,15 @@ class Blindscan(ConfigListScreen, Screen):
 			exe_path = "/usr/bin/%s" % exe_filename
 			if os.path.exists(exe_path):
 				cmd = "%s %d %d %d %d %d %d %d %d" % (exe_filename, temp_start_int_freq, temp_end_int_freq, config.blindscan.start_symbol.value, config.blindscan.stop_symbol.value, tab_pol[pol], tab_hilow[band], self.feid, self.getNimSocket(self.feid))
-				if getBrandOEM() in ('ceryon', 'clap', 'dinobot', 'uclan') or getBoxType().startswith('sf8008') or getBoxType() in ('gbmv200'):
+				if getBrandOEM() in ('ceryon', 'clap', 'dinobot', 'uclan', 'amiko') or getBoxType().startswith('sf8008') or getBoxType() in ('gbtrio4k'):
 					cmd += " %d" % self.is_c_band_scan
-				if getBrandOEM() in ('clap', 'dinobot', 'uclan') or getBoxType().startswith('sf8008') or getBoxType() in ('gbmv200'):
+				if getBrandOEM() in ('clap', 'dinobot', 'uclan', 'amiko') or getBoxType().startswith('sf8008') or getBoxType() in ('gbtrio4k'):
 					cmd += " %d" % orb[0]
 				if getBrandOEM() in ('azbox',):
 					self.polsave=tab_pol[pol] # Data returned by the binary is not good we must save polarisation
 				if getBrandOEM() in ('clap'):
 					self.frontend and self.frontend.closeFrontend()
-				if getBrandOEM() in ('uclan') or getBoxType().startswith('sf8008') or getBoxType() in ('gbmv200'):
+				if getBrandOEM() in ('uclan', 'amiko') or getBoxType().startswith('sf8008') or getBoxType() in ('gbtrio4k'):
 					self.adjust_freq = False
 			else:
 				self.session.open(MessageBox, _("Blindscan executable not found '%s'!") % exe_path, MessageBox.TYPE_ERROR)
@@ -1126,6 +1127,8 @@ class Blindscan(ConfigListScreen, Screen):
 					parm.fec = fec.get(data[7], eDVBFrontendParametersSatellite.FEC_Auto)
 					parm.modulation = qam[data[8]]
 					parm.rolloff = roll[data[9]]
+					if parm.system == parm.System_DVB_S:
+						data = data[:10] # "DVB-S" does not support MIS/PLS or T2MI so remove any values from the output of the binary file
 					parm.pls_mode = getMisPlsValue(data, 10, eDVBFrontendParametersSatellite.PLS_Gold)
 					parm.is_id = getMisPlsValue(data, 11, eDVBFrontendParametersSatellite.No_Stream_Id_Filter)
 					parm.pls_code = getMisPlsValue(data, 12, 0)
@@ -1237,7 +1240,10 @@ class Blindscan(ConfigListScreen, Screen):
 
 			# Process transponders still in list
 			if self.tmp_tplist != []:
-				self.tmp_tplist = sorted(self.tmp_tplist, key=lambda tp: (tp.frequency, tp.is_id, tp.pls_mode, tp.pls_code)) # tp.t2mi_plp_id can be added here later
+				if hasattr(eDVBFrontendParametersSatellite, "No_T2MI_PLP_Id"): # if image is T2MI capable
+					self.tmp_tplist = sorted(self.tmp_tplist, key=lambda tp: (tp.frequency, tp.is_id, tp.pls_mode, tp.pls_code, tp.t2mi_plp_id))
+				else: # if image is NOT T2MI capable
+					self.tmp_tplist = sorted(self.tmp_tplist, key=lambda tp: (tp.frequency, tp.is_id, tp.pls_mode, tp.pls_code))
 				blindscanStateList = []
 				for p in self.tmp_tplist:
 					print "[Blindscan][blindscanSessionClose] data: [%d][%d][%d][%d][%d][%d][%d][%d][%d][%d]" % (p.orbital_position, p.polarisation, p.frequency, p.symbol_rate, p.system, p.inversion, p.pilot, p.fec, p.modulation, p.modulation)
