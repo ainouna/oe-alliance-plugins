@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-19 23:17+0200\n"
+"POT-Creation-Date: 2019-05-21 03:05+0200\n"
 "PO-Revision-Date: 2019-05-19 14:39+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -22,10 +22,10 @@ msgid "Cannot allocate the demuxer."
 msgstr "Demuxer kann nicht zugeordnet werden."
 
 msgid "Cannot free NIM because a recording is in progress"
-msgstr "Tuner kann nicht freigegeben werden, da gerade eine Aufzeichnung läuft"
+msgstr "Tuner belegt, da gerade eine Aufzeichnung läuft"
 
 msgid "Cannot get frontend"
-msgstr "Keinen Tuner gefunden"
+msgstr "Kein Tuner gefunden"
 
 msgid "Cannot get the NIM"
 msgstr "Tuner kann nicht abgerufen werden"
@@ -52,7 +52,7 @@ msgid "If you select \"yes\" stored channels at the same orbital position will b
 msgstr "Wenn Sie \"Ja\" auswählen, werden gespeicherte Kanäle an derselben Orbitalposition gelöscht, bevor die aktuelle Suche gestartet wird. Hinweis: Wenn Sie mehr als einen Anbieter suchen, muss dieser auf \"Nein\" gesetzt werden."
 
 msgid "If you select \"yes\" the scan will only save channels that are not encrypted; \"no\" will find encrypted and non-encrypted channels."
-msgstr "Wenn Sie \"Ja\" wählen, werden nur Kanäle gespeichert, die nicht verschlüsselt sindNein\" findet verschlüsselte und unverschlüsselte Kanäle."
+msgstr "Wenn Sie \"Ja\" wählen, werden nur Kanäle gespeichert, die nicht verschlüsselt sind. \"Nein\" findet verschlüsselte und unverschlüsselte Kanäle."
 
 msgid "Italia MIS 5W"
 msgstr "Italia MIS 5W"
@@ -66,8 +66,9 @@ msgstr "Kein kompatibler Tuner gefunden"
 msgid "No frequencies to search"
 msgstr "Keine Frequenzen zu suchen"
 
-msgid "No valid NIM found for "
-msgstr "Kein gültiger Tuner gefunden"
+#, python-format
+msgid "No valid NIM found for %s"
+msgstr "Kein gültiger Tuner gefunden %s"
 
 msgid "Only free scan"
 msgstr "Nur frei empfangbare"
@@ -89,7 +90,7 @@ msgid "Scanning transponders"
 msgstr "Suche Transponder"
 
 msgid "Select the provider you wish to scan."
-msgstr "Wählen Sie den Anbieter aus, den Sie scannen möchten."
+msgstr "Wählen Sie den Anbieter aus, den Sie suchen möchten."
 
 msgid "Starting scanner"
 msgstr "Scanner starten"

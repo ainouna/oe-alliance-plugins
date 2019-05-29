@@ -1,11 +1,10 @@
 # for localized messages
-from . import _
+from . import _, __
 
 from Screens.Screen import Screen
 from Components.ActionMap import ActionMap
 from Screens.MessageBox import MessageBox
 from Components.Label import Label
-from Components.Pixmap import Pixmap
 from Components.ProgressBar import ProgressBar
 from Components.Sources.Progress import Progress
 from Components.Sources.FrontendStatus import FrontendStatus
@@ -16,28 +15,14 @@ from enigma import eDVBResourceManager, eTimer, eDVBDB, eDVBFrontendParameters, 
 
 from providers import PROVIDERS
 
-import os
-import sys
-
 import datetime
 import time
 
-from Tools.Directories import resolveFilename, fileExists
-try:
-	from Tools.Directories import SCOPE_ACTIVE_SKIN
-except:
-	pass
-
 import dvbreader
+from MisPlsLcnScanSkin import downloadBar
 
 class MisPlsLcnScan(Screen):
-	skin = """
-	<screen position="c-300,e-80" size="600,70" flags="wfNoBorder" >
-		<widget name="background" position="0,0" size="600,70" zPosition="-1" />
-		<widget name="action" halign="center" valign="center" position="65,10" size="520,20" font="Regular;18" backgroundColor="#11404040" transparent="1" />
-		<widget name="status" halign="center" valign="center" position="65,35" size="520,20" font="Regular;18" backgroundColor="#11000000" transparent="1" />
-		<widget name="progress" position="65,55" size="520,5" borderWidth="1" backgroundColor="#11000000"/>
-	</screen>"""
+	skin = downloadBar
 
 	def __init__(self, session, args = 0):
 		print "[MisPlsLcnScan][__init__] Starting..."
@@ -46,11 +31,11 @@ class MisPlsLcnScan(Screen):
 		Screen.__init__(self, session)
 		Screen.setTitle(self, _("MIS/PLS LCN Scan"))
 
-		self["background"] = Pixmap()
 		self["action"] = Label(_("Starting scanner"))
 		self["status"] = Label("")
 		self["progress"] = ProgressBar()
 		self["progress_text"] = Progress()
+		self["tuner_text"] = Label("")
 
 		self["actions"] = ActionMap(["SetupActions"],
 		{
@@ -59,8 +44,6 @@ class MisPlsLcnScan(Screen):
 
 		self.selectedNIM = -1
 		self.FTA_only = config.plugins.MisPlsLcnScan.onlyfree.value
-		self.networkid = 0
-		self.restrict_to_networkid = False
 		if args:
 			pass
 		self.frontend = None
@@ -100,14 +83,6 @@ class MisPlsLcnScan(Screen):
 		self.close()
 
 	def firstExec(self):
-		try:
-			png = resolveFilename(SCOPE_ACTIVE_SKIN, "MisPlsLcnScan/background.png")
-		except:
-			png = None
-		if not png or not fileExists(png):
-			png = "%s/images/background.png" % os.path.dirname(sys.modules[__name__].__file__)
-		self["background"].instance.setPixmapFromFile(png)
-
 		if len(self.scanTransponders) > 0:
 			self["action"].setText(_('Starting search...'))
 			self["status"].setText(_("Scanning transponders"))
@@ -124,13 +99,14 @@ class MisPlsLcnScan(Screen):
 			self.showError(_('No frequencies to search'))
 
 	def readStreams(self):
+		self["tuner_text"].setText("")
 		if self.index < len(self.scanTransponders):
 			self.transpondercurrent = self.scanTransponders[self.index]
 			self.progresscurrent = self.index
 			self["progress_text"].value = self.progresscurrent
 			self["progress"].setValue(self.progresscurrent)
 			self["action"].setText(_("Tuning %s MHz, IS %s") % (str(self.transpondercurrent.frequency/1000), str(self.transpondercurrent.is_id)))
-			self["status"].setText(ngettext("Found %d transponder", "Found %d transponders", len(self.transponders_correct_onid)) % len(self.transponders_correct_onid))
+			self["status"].setText(__("Found %d transponder", "Found %d transponders", len(self.transponders_correct_onid)) % len(self.transponders_correct_onid))
 			self.index += 1
 			self.searchtimer = eTimer()
 			self.searchtimer.callback.append(self.getFrontend)
@@ -149,27 +125,26 @@ class MisPlsLcnScan(Screen):
 		def isMultistreamTP(tp):
 			# since we are using Gold sequences there is no need to check the PLS Mode
 			return tp[5] == eDVBFrontendParametersSatellite.System_DVB_S2 and (tp[10] > eDVBFrontendParametersSatellite.No_Stream_Id_Filter or tp[12] > eDVBFrontendParametersSatellite.PLS_Default_Gold_Code)
-		list = [tp for tp in nimmanager.getTransponders(pos) if isMultistreamTP(tp)]
-		for x in list:
-			if x[0] == 0:
+		for tp in [tp for tp in nimmanager.getTransponders(pos) if isMultistreamTP(tp)]:
+			if tp[0] == 0:
 				parm = eDVBFrontendParametersSatellite()
-				parm.frequency = x[1]
-				parm.symbol_rate = x[2]
-				parm.polarisation = x[3]
-				parm.fec = x[4]
-				parm.inversion = x[7]
+				parm.frequency = tp[1]
+				parm.symbol_rate = tp[2]
+				parm.polarisation = tp[3]
+				parm.fec = tp[4]
+				parm.inversion = tp[7]
 				parm.orbital_position = pos
-				parm.system = x[5]
-				parm.modulation = x[6]
-				parm.rolloff = x[8]
-				parm.pilot = x[9]
-				parm.is_id = x[10]
-				parm.pls_mode = x[11]
-				parm.pls_code = x[12]
-				if hasattr(parm, "t2mi_plp_id") and len(x) > 13:
-					parm.t2mi_plp_id = x[13]
-					if hasattr(parm, "t2mi_pid") and len(x) > 14:
-						parm.t2mi_pid = x[14]
+				parm.system = tp[5]
+				parm.modulation = tp[6]
+				parm.rolloff = tp[8]
+				parm.pilot = tp[9]
+				parm.is_id = tp[10]
+				parm.pls_mode = tp[11]
+				parm.pls_code = tp[12]
+				if hasattr(parm, "t2mi_plp_id") and len(tp) > 13:
+					parm.t2mi_plp_id = tp[13]
+					if hasattr(parm, "t2mi_pid") and len(tp) > 14:
+						parm.t2mi_pid = tp[14]
 				tlist.append(parm)
 		return tlist
 
@@ -188,7 +163,8 @@ class MisPlsLcnScan(Screen):
 			if not nim.isCompatible("DVB-S") or \
 				not nim.isMultistream() or \
 				nim.isFBCLink() or \
-				(hasattr(nim, 'config_mode_dvbs') and nim.config_mode_dvbs or nim.config_mode) in ("loopthrough", "satposdepends", "nothing"):
+				(hasattr(nim, 'config_mode_dvbs') and nim.config_mode_dvbs or nim.config_mode) in ("loopthrough", "satposdepends", "nothing") or \
+				self.transpondercurrent.orbital_position not in [sat[0] for sat in nimmanager.getSatListForNim(nim.slot)]:
 				continue
 			nimList.append(nim.slot)
 
@@ -202,8 +178,6 @@ class MisPlsLcnScan(Screen):
 			print "[MisPlsLcnScan][getFrontend] Cannot retrieve Resource Manager instance"
 			self.showError(_('Cannot retrieve Resource Manager instance'))
 			return
-
-		print "[MisPlsLcnScan][getFrontend] Search NIM for orbital position %d" % self.transpondercurrent.orbital_position
 
 		# stop pip if running
 		if self.session.pipshown:
@@ -235,43 +209,36 @@ class MisPlsLcnScan(Screen):
 		self.frontend = None
 		self.rawchannel = None
 
-		nimList.reverse() # start from the last
+		nimList = [slot for slot in nimList if not self.isRotorSat(slot, self.transpondercurrent.orbital_position)] + [slot for slot in nimList if self.isRotorSat(slot, self.transpondercurrent.orbital_position)] #If we have a choice of dishes try "fixed" before "motorised".
 		for slotid in nimList:
-			sats = nimmanager.getSatListForNim(slotid)
-			for sat in sats:
-				if sat[0] == self.transpondercurrent.orbital_position:
-					if current_slotid == -1:	# mark the first valid slotid in case of no other one is free
-						current_slotid = slotid
+			if current_slotid == -1:	# mark the first valid slotid in case of no other one is free
+				current_slotid = slotid
 
-					self.rawchannel = resmanager.allocateRawChannel(slotid)
-					if self.rawchannel:
-						print "[MisPlsLcnScan][getFrontend] Nim found on slot id %d with sat %s" % (slotid, sat[1])
-						current_slotid = slotid
-						break
+			self.rawchannel = resmanager.allocateRawChannel(slotid)
+			if self.rawchannel:
+				print "[MisPlsLcnScan][getFrontend] Nim found on slot id %d with sat %s" % (slotid, nimmanager.getSatName(self.transpondercurrent.orbital_position))
+				current_slotid = slotid
+				break
 
 			if self.rawchannel:
 				break
 
 		if current_slotid == -1:
 			print "[MisPlsLcnScan][getFrontend] No valid NIM found"
-			self.showError(_('No valid NIM found for ') + PROVIDERS[config.plugins.MisPlsLcnScan.provider.value]["name"])
+			self.showError(_('No valid NIM found for %s') % PROVIDERS[config.plugins.MisPlsLcnScan.provider.value]["name"])
 			return
 
 		if not self.rawchannel:
 			# if we are here the only possible option is to close the active service
 			if currentlyPlayingNIM in nimList:
 				slotid = currentlyPlayingNIM
-				sats = nimmanager.getSatListForNim(slotid)
-				for sat in sats:
-					if sat[0] == self.transpondercurrent.orbital_position:
-						print "[MisPlsLcnScan][getFrontend] Nim found on slot id %d but it's busy. Stopping active service" % slotid
-						self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
-						self.session.nav.stopService()
-						self.rawchannel = resmanager.allocateRawChannel(slotid)
-						if self.rawchannel:
-							print "[MisPlsLcnScan][getFrontend] The active service was stopped, and the NIM is now free to use."
-							current_slotid = slotid
-						break
+				print "[MisPlsLcnScan][getFrontend] Nim found on slot id %d but it's busy. Stopping active service" % slotid
+				self.postScanService = self.session.nav.getCurrentlyPlayingServiceReference()
+				self.session.nav.stopService()
+				self.rawchannel = resmanager.allocateRawChannel(slotid)
+				if self.rawchannel:
+					print "[MisPlsLcnScan][getFrontend] The active service was stopped, and the NIM is now free to use."
+					current_slotid = slotid
 
 			if not self.rawchannel:
 				if self.session.nav.RecordTimer.isRecording():
@@ -294,7 +261,9 @@ class MisPlsLcnScan(Screen):
 			print "[MisPlsLcnScan][getFrontend] Fixed dish. Will wait up to %i seconds for tuner lock." % (self.LOCK_TIMEOUT/10)
 
 		self.selectedNIM = current_slotid  # Remember for downloading SI tables
-
+		
+		self["tuner_text"].setText(chr(ord('A') + current_slotid))
+		
 		self.frontend = self.rawchannel.getFrontend()
 		if not self.frontend:
 			print "[MisPlsLcnScan][getFrontend] Cannot get frontend"

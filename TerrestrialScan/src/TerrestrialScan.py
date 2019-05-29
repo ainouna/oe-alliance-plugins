@@ -1,5 +1,5 @@
 # for localized messages
-from . import _
+from . import _, __
 
 from Screens.Screen import Screen
 from Components.ActionMap import ActionMap
@@ -18,13 +18,8 @@ import sys
 import datetime
 import time
 
-from Tools.Directories import resolveFilename, fileExists
-try:
-	from Tools.Directories import SCOPE_ACTIVE_SKIN
-except:
-	pass
-
 import dvbreader
+from TerrestrialScanSkin import downloadBar
 
 def setParams(frequency, system, bandwidth = 8): # freq is nine digits (474000000)
 	params = eDVBFrontendParametersTerrestrial()
@@ -72,13 +67,7 @@ def getChannelNumber(frequency, descr):
 	return ""
 
 class TerrestrialScan(Screen):
-	skin = """
-	<screen position="c-300,e-80" size="600,70" flags="wfNoBorder" >
-		<widget name="background" position="0,0" size="600,70" zPosition="-1" />
-		<widget name="action" halign="center" valign="center" position="65,10" size="520,20" font="Regular;18" backgroundColor="#11404040" transparent="1" />
-		<widget name="status" halign="center" valign="center" position="65,35" size="520,20" font="Regular;18" backgroundColor="#11000000" transparent="1" />
-		<widget name="progress" position="65,55" size="520,5" borderWidth="1" backgroundColor="#11000000"/>
-	</screen>"""
+	skin = downloadBar
 
 	def __init__(self, session, args = 0):
 		print "[TerrestrialScan][__init__] Starting..."
@@ -92,6 +81,7 @@ class TerrestrialScan(Screen):
 		self["status"] = Label("")
 		self["progress"] = ProgressBar()
 		self["progress_text"] = Progress()
+		self["tuner_text"] = Label("")
 
 		self["actions"] = ActionMap(["SetupActions"],
 		{
@@ -154,14 +144,6 @@ class TerrestrialScan(Screen):
 		self.close()
 
 	def firstExec(self):
-		try:
-			png = resolveFilename(SCOPE_ACTIVE_SKIN, "terrestrialscan/background.png")
-		except:
-			png = None
-		if not png or not fileExists(png):
-			png = "%s/images/background.png" % os.path.dirname(sys.modules[__name__].__file__)
-		self["background"].instance.setPixmapFromFile(png)
-
 		if len(self.scanTransponders) > 0:
 			self["action"].setText(_('Starting search...'))
 			self["status"].setText(_("Scanning for active transponders"))
@@ -178,6 +160,7 @@ class TerrestrialScan(Screen):
 			self.showError(_('No frequencies to search'))
 
 	def search(self):
+		self["tuner_text"].setText("")
 		if self.index < len(self.scanTransponders):
 			self.system = self.scanTransponders[self.index]["system"]
 			self.bandwidth = self.scanTransponders[self.index]["bandwidth"]
@@ -189,7 +172,7 @@ class TerrestrialScan(Screen):
 			self["progress_text"].value = self.progresscurrent
 			self["progress"].setValue(self.progresscurrent)
 			self["action"].setText(_("Tuning %s MHz (ch %s)") % (str(self.frequency/1000000), getChannelNumber(self.frequency, self.uhf_vhf)))
-			self["status"].setText(ngettext("Found %d unique transponder", "Found %d unique transponders", len(self.transponders_unique)) % len(self.transponders_unique))
+			self["status"].setText(__("Found %d unique transponder", "Found %d unique transponders", len(self.transponders_unique)) % len(self.transponders_unique))
 			self.index += 1
 			if self.frequency in self.transponders_found or self.system == eDVBFrontendParametersTerrestrial.System_DVB_T2 and self.isT2tuner == False:
 				print "[TerrestrialScan][Search] Skipping T2 search of %s MHz (ch %s)" % (str(self.frequency/1000000), getChannelNumber(self.frequency, self.uhf_vhf))
@@ -320,6 +303,8 @@ class TerrestrialScan(Screen):
 
 		self.selectedNIM = current_slotid # Remember for next iteration
 
+		self["tuner_text"].setText(chr(ord('A') + current_slotid))
+
 		self.frontend = self.rawchannel.getFrontend()
 		if not self.frontend:
 			print "[TerrestrialScan][getFrontend] Cannot get frontend"
@@ -373,6 +358,7 @@ class TerrestrialScan(Screen):
 		self.getCurrentTsidOnid()
 		if self.tsid is not None and self.onid is not None:
 			print "[TerrestrialScan][tsidOnidWaitABM] tsid & onid found", self.tsid, self.onid
+			self.signalQualityCounter = 0
 			self.signalQualityWait()
 			return
 
