@@ -2,13 +2,14 @@
 from . import _
 
 from boxbranding import getImageDistro
+import os
+import urllib
 
-import os, urllib
 from urllib import urlretrieve
 
 from Plugins.Plugin import PluginDescriptor
 
-from Components.config import config, getConfigListEntry, ConfigSubsection, ConfigText, ConfigSelection, ConfigYesNo,ConfigText
+from Components.config import config, getConfigListEntry, ConfigSubsection, ConfigText, ConfigSelection, ConfigYesNo, ConfigText
 from Components.ConfigList import ConfigListScreen
 from Components.ActionMap import ActionMap
 from Components.Sources.StaticText import StaticText
@@ -34,143 +35,144 @@ if os.path.exists("/proc/stb/info/boxtype"):
 	inimodel.close()
 
 	if info == "ini-1000":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS100_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS100_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-1000ru":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS100RU_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS100RU_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-1000sv":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS100SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS100SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-1000de":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS100DE_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS100DE_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-1000am":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS300AM_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS300AM_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-2000am":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS200AM_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS200AM_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-2000sv":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS200SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS200SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-3000":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS300_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS300_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-5000":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS500_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS500_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-5000ru":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS500RU_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS500RU_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-5000sv":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS500SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS500SV_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-7000":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS700_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS700_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-7012":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "RHS712_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "RHS712_Micom.bin", "/dev/dbox/oled0;/dev/mcu;"]
 			}
 	elif info == "ini-7012au":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
+		fwdata = {
 			 "micom" : ["http://feeds.beyonwiz.org/micom/", "RHS712AU_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-8000au":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
+		fwdata = {
 			 "micom" : ["http://feeds.beyonwiz.org/micom/", "INI900AU_OLED_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-8000am":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "INI800AM_Micom.bin", "/proc/vfd;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "INI800AM_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-8000sv":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "INI800SV_Micom.bin", "/proc/vfd;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "INI800SV_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-9000de":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "INI900DE_Micom.bin", "/proc/vfd;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "INI900DE_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
 	elif info == "ini-9000ru":
-		fwlist= [
+		fwlist = [
 			("fp", _("Front Panel"))
 			]
-		fwdata= {
-			 "micom" : ["http://micom.mynonpublic.com/software/micom/", "INI900RU_Micom.bin", "/proc/vfd;/dev/mcu;"]
+		fwdata = {
+			 "micom": ["http://micom.mynonpublic.com/software/micom/", "INI900RU_Micom.bin", "/proc/vfd;/dev/mcu;"]
 			}
+
 
 class Filebrowser(Screen):
 	skin = """
 		<screen position="center,center" size="500,490" title="File Browser" >
-			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/yellow.png" position="5,7" size="140,40" alphatest="blend" />		
+			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/yellow.png" position="5,7" size="140,40" alphatest="blend" />
 			<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/buttons/blue-340.png" position="150,7" size="340,40" alphatest="blend" />
 			<widget source="key_yellow" render="Label" position="5,7" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" transparent="1"/>
 			<widget source="key_blue" render="Label" position="150,7" zPosition="1" size="340,40" font="Regular;20" halign="center" valign="center" transparent="1"/>
@@ -186,18 +188,19 @@ class Filebrowser(Screen):
 		self["key_blue"] = StaticText(_("Download current firmware"))
 		self["key_yellow"] = StaticText(_("Cancel"))
 
-		self["status"]    = StaticText(" ")
-		self["file_list"] = FileList("/", matchingPattern = "^.*")
+		self["status"] = StaticText(" ")
+		self["file_list"] = FileList("/", matchingPattern="^.*")
 
 		self["actions"] = ActionMap(["OkCancelActions", "ShortcutActions", "WizardActions", "ColorActions", ], {
-			"ok":     self.onClickOk,
+
+			"ok": self.onClickOk,
 			"cancel": self.onClickCancel,
-			"blue":   self.onClickBlue,
+			"blue": self.onClickBlue,
 			"yellow": self.onClickCancel,
-			"up":     self.onClickUp,
-			"down":   self.onClickDown,
-			"left":   self.onClickLeft,
-			"right":  self.onClickRight,
+			"up": self.onClickUp,
+			"down": self.onClickDown,
+			"left": self.onClickLeft,
+			"right": self.onClickRight,
 		}, -1)
 
 		self.resetGUI()
@@ -228,13 +231,13 @@ class Filebrowser(Screen):
 		if not os.path.exists(self.gbin):
 			self.session.open(MessageBox, _("Can not find .bin file."), MessageBox.TYPE_INFO, timeout = 10)
 			return
-		if not os.path.exists(self.gbin+".md5"):
+		if not os.path.exists(self.gbin + ".md5"):
 			self.session.open(MessageBox, _("Can not find .md5 file."), MessageBox.TYPE_INFO, timeout = 10)
 			return
 		try:
 			def checkExt(ext):
 				name_ext = os.path.splitext(self["file_list"].getFilename())
-				return len(name_ext)==2 and ext.startswith(name_ext[1])
+				return len(name_ext) == 2 and ext.startswith(name_ext[1])
 			self.check_ext = False
 			if (self.firmware == "micom" and checkExt(".bin")):
 				self.check_ext = True
@@ -248,13 +251,15 @@ class Filebrowser(Screen):
 		if os.path.exists("/usr/bin/md5sum") == False:
 			self.session.open(MessageBox, _("Can not find /usr/bin/md5sum"), MessageBox.TYPE_INFO, timeout = 10)
 			return
-		md5sum_A = os.popen("md5sum %s | awk \'{print $1}\'"%(self.gbin)).readline().strip()
-		md5sum_B = os.popen("cat %s.md5 | awk \'{print $1}\'"%(self.gbin)).readline().strip()
+		md5sum_A = os.popen("md5sum %s | awk \'{print $1}\'" % (self.gbin)).readline().strip()
+		md5sum_B = os.popen("cat %s.md5 | awk \'{print $1}\'" % (self.gbin)).readline().strip()
 		#print "[FirmwareUpgrade] - Verify : file[%s], md5[%s]"%(md5sum_A,md5sum_B)
 
 		if md5sum_A != md5sum_B:
 			self.session.open(MessageBox, _("File failed data integrity test.\nCalculated: [%s]\ninstead of: [%s]" % (md5sum_A, md5sum_B)), MessageBox.TYPE_INFO, timeout=10)
 			return
+
+
 		if self.callback is not None:
 			self.callback(_(self.gbin))
 		self.close()
@@ -269,12 +274,17 @@ class Filebrowser(Screen):
 	def doDownload(self, uri, tf, bd='/tmp', cbfunc=None, errmsg="Failed to download."):
 		tar = bd + "/" + tf
 		#print "[FirmwareUpgrade] - Download Info : [%s][%s]" % (uri, tar)
-		def doHook(blockNumber, blockSize, totalSize) :
-			if blockNumber*blockSize > totalSize and cbfunc is not None:
+
+		def doHook(blockNumber, blockSize, totalSize):
+			if blockNumber * blockSize > totalSize and cbfunc is not None:
 				cbfunc(tar)
 		opener = urllib.URLopener()
 		try:
 			opener.open(uri)
+
+
+
+
 			f, h = urlretrieve(uri, tar, doHook)
 		except (Exception) as ex:
 			msg = str(ex)
@@ -287,7 +297,7 @@ class Filebrowser(Screen):
 		del opener
 		return True
 
-	def runDownloading(self) :
+	def runDownloading(self):
 		self.timer_downloading.stop()
 		machine = str(open("/proc/stb/info/boxtype").read().strip())
 
@@ -298,10 +308,10 @@ class Filebrowser(Screen):
 				pass
 		# target
 		global fwdata
-		root_uri  = fwdata[self.firmware][0]
+		root_uri = fwdata[self.firmware][0]
 		root_file = fwdata[self.firmware][1]
 		micom_url = root_uri + machine + "/" + root_file
-		
+
 		target_path = "/tmp/" + root_file
 
 		self.guri = micom_url
@@ -309,7 +319,7 @@ class Filebrowser(Screen):
 		os.system("rm -f /tmp/" + root_file)
 
 		# md5
-		if not self.doDownload(self.guri+".md5", self.gbin+".md5", cbfunc=cbDownloadDone, errmsg="Can not download .md5 file."):
+		if not self.doDownload(self.guri + ".md5", self.gbin + ".md5", cbfunc=cbDownloadDone, errmsg="Can not download .md5 file."):
 			self.resetGUI()
 			self.downloadLock = False
 			return
@@ -319,7 +329,7 @@ class Filebrowser(Screen):
 			self.downloadLock = False
 			return
 		# version
-		if not self.doDownload(self.guri+".version", self.gbin+".version", cbfunc=cbDownloadDone, errmsg="Can not download .version file."):
+		if not self.doDownload(self.guri + ".version", self.gbin + ".version", cbfunc=cbDownloadDone, errmsg="Can not download .version file."):
 			self.resetGUI()
 			self.downloadLock = False
 			return
@@ -327,7 +337,7 @@ class Filebrowser(Screen):
 		t = ''
 		self["file_list"].changeDir("/tmp/")
 		self["file_list"].moveToIndex(0)
-		while cmp(self["file_list"].getFilename(), self.gbin) != 0 :
+		while cmp(self["file_list"].getFilename(), self.gbin) != 0:
 			self["file_list"].down()
 			if cmp(t, self["file_list"].getFilename()) == 0:
 				break
@@ -377,6 +387,7 @@ class Filebrowser(Screen):
 	def keyNone(self):
 		None
 
+
 class FirmwareUpgrade(Screen):
 	skin = """
 		<screen position="center,center" size="530,295" title="Firmware Upgrade" >
@@ -396,12 +407,12 @@ class FirmwareUpgrade(Screen):
 		Screen.__init__(self, session)
 		self.session = session
 
-		self["shortcuts"] = ActionMap(["ShortcutActions", "SetupActions" ],
+		self["shortcuts"] = ActionMap(["ShortcutActions", "SetupActions"],
 		{
-			"ok":      self.keyGreen,
-			"cancel":  self.keyRed,
-			"red":     self.keyRed,
-			"green":   self.keyGreen,
+			"ok": self.keyGreen,
+			"cancel": self.keyRed,
+			"red": self.keyRed,
+			"green": self.keyGreen,
 		}, -2)
 
 		self.list = []
@@ -411,7 +422,7 @@ class FirmwareUpgrade(Screen):
 
 		self.rebootLock = False
 		self.rebootMessage = ""
-		self.cbRebootCallCount = 0;
+		self.cbRebootCallCount = 0
 
 		from Tools.StbHardware import getFPVersion
 		self.version = str(getFPVersion() or "N/A")
@@ -422,7 +433,7 @@ class FirmwareUpgrade(Screen):
 
 		self["oldversion"] = Label(self.version)
 		self["newversion"] = Label(newversion)
-		
+
 		self["key_red"] = StaticText(_("Close"))
 
 		self.logmode = None
@@ -443,7 +454,7 @@ class FirmwareUpgrade(Screen):
 	def setupUI(self):
 		self.setupStatus()
 
-	def setupStatus(self,message=None,reboot=False):
+	def setupStatus(self, message=None, reboot=False):
 		self.updateFilePath = ""
 		if message is not None:
 			self.rebootLock = reboot
@@ -453,19 +464,19 @@ class FirmwareUpgrade(Screen):
 	def doReboot(self):
 		from Screens.Standby import TryQuitMainloop
 		self.session.open(TryQuitMainloop, 44)
-		
+
 	# filebrowser window callback function
 	def cbSetStatus(self, data=None):
 		if data is not None:
 			try:
-				fp = open(data+'.version', "r")
+				fp = open(data + '.version', "r")
 				self.verfile = fp.readline()
 				fp.close()
 				self.verfile = self.verfile.strip("\n")
 			except:
 				self.verfile = "N/A"
 			self["newversion"].setText(self.verfile)
-			
+
 			# HACK for samples, which does not have micom version
 			try:
 				if int(self.verfile) <= int(self.version):
@@ -483,17 +494,17 @@ class FirmwareUpgrade(Screen):
 			return
 
 		if self.updateFilePath == "":
-			self.session.open(MessageBox, _("No .bin update file selected!"), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("No .bin update file selected!"), MessageBox.TYPE_INFO, timeout=10)
 			return
 		device = None
 		for d in fwdata['micom'][2].split(';'):
 			if os.path.exists(d):
 				device = d
 		if device is None:
-			self.session.open(MessageBox, _("Can not find the device file!"), MessageBox.TYPE_INFO, timeout = 10)
+			self.session.open(MessageBox, _("Can not find the device file!"), MessageBox.TYPE_INFO, timeout=10)
 			return
 
-		copyfile(self.updateFilePath,"/tmp/micom.bin")
+		copyfile(self.updateFilePath, "/tmp/micom.bin")
 		self.doReboot()
 		return
 
@@ -515,12 +526,12 @@ class FirmwareUpgrade(Screen):
 		# HACK for samples, which does not have micom version
 		try:
 			if int(self.verfile) <= int(self.version):
-				self.session.open(MessageBox, _("You can not upgrade to the same or lower version !"), MessageBox.TYPE_INFO, timeout = 10)
+				self.session.open(MessageBox, _("You can not upgrade to the same or lower version !"), MessageBox.TYPE_INFO, timeout=10)
 				return
 		except:
 			pass # always flash when no micom version
 		msg = "You must not interrupt the upgrade process.\nDo you want to upgrade?"
-		self.session.openWithCallback(self.cbRunUpgrade, MessageBox, _(msg), MessageBox.TYPE_YESNO, timeout = 15, default = True)
+		self.session.openWithCallback(self.cbRunUpgrade, MessageBox, _(msg), MessageBox.TYPE_YESNO, timeout=15, default=True)
 		self.fileopenmode = False
 
 
@@ -540,6 +551,7 @@ def start_menu_main(menuid, **kwargs):
 
 def main(session, **kwargs):
 	session.open(FirmwareUpgrade)
+
 
 def Plugins(**kwargs):
 	l = []

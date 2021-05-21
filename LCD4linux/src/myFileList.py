@@ -20,7 +20,6 @@
 #######################################################################
 
 
-
 from re import compile as re_compile
 from os import path as os_path, listdir, stat as os_stat
 from Components.MenuList import MenuList
@@ -28,17 +27,18 @@ from Components.Harddisk import harddiskmanager
 from Components.config import config
 from enigma import RT_HALIGN_LEFT, eListboxPythonMultiContent, eServiceReference, eServiceCenter, gFont, iServiceInformation
 from Tools.LoadPixmap import LoadPixmap
+from Tools.Directories import SCOPE_PLUGINS, resolveFilename
 
 
-def FileEntryComponent(name, absolute = None, isDir = False):
-	res = [ (absolute, isDir) ]
+def FileEntryComponent(name, absolute=None, isDir=False):
+	res = [(absolute, isDir)]
 	res.append((eListboxPythonMultiContent.TYPE_TEXT, 40, 2, 1000, 22, 0, RT_HALIGN_LEFT, name))
 	if isDir:
-		png = LoadPixmap("/usr/lib/enigma2/python/Plugins/Extensions/LCD4linux/data/dir.png")
+		png = LoadPixmap(resolveFilename(SCOPE_PLUGINS, "Extensions/LCD4linux/data/dir.png"))
 	else:
 #		extension = name.split('.')
 #		extension = extension[-1].lower()
-#		if EXTENSIONS.has_key(extension):
+#		if extension in EXTENSIONS:
 #			png = LoadPixmap("/usr/lib/enigma2/python/Plugins/Extensions/DreamExplorer/res/" + EXTENSIONS[extension] + ".png")
 #		else:
 #			png = None
@@ -48,9 +48,8 @@ def FileEntryComponent(name, absolute = None, isDir = False):
 	return res
 
 
-
 class FileList(MenuList):
-	def __init__(self, directory, showDirectories = True, showFiles = True, showMountpoints = True, matchingPattern = None, useServiceRef = False, inhibitDirs = False, inhibitMounts = False, isTop = False, enableWrapAround = True, additionalExtensions = None):
+	def __init__(self, directory, showDirectories=True, showFiles=True, showMountpoints=True, matchingPattern=None, useServiceRef=False, inhibitDirs=False, inhibitMounts=False, isTop=False, enableWrapAround=True, additionalExtensions=None):
 		MenuList.__init__(self, list, enableWrapAround, eListboxPythonMultiContent)
 		self.additional_extensions = additionalExtensions
 		self.mountpoints = []
@@ -70,16 +69,16 @@ class FileList(MenuList):
 			se = directory
 		else:
 			se = os_path.basename(directory)
-			direct = directory+"/"
-#		print "direct,se",direct,se
-		self.changeDir(direct,se)
+			direct = directory + "/"
+#		print("direct,se",direct,se)
+		self.changeDir(direct, se)
 		self.l.setFont(0, gFont("Regular", 18))
 		self.l.setItemHeight(26)
 		self.serviceHandler = eServiceCenter.getInstance()
 
 	def refreshMountpoints(self):
 		self.mountpoints = [os_path.join(p.mountpoint, "") for p in harddiskmanager.getMountedPartitions()]
-		self.mountpoints.sort(reverse = True)
+		self.mountpoints.sort(reverse=True)
 
 	def getMountpoint(self, file):
 		file = os_path.join(os_path.realpath(file), "")
@@ -124,7 +123,7 @@ class FileList(MenuList):
 				return True
 		return False
 
-	def changeDir(self, directory, select = None):
+	def changeDir(self, directory, select=None):
 		self.list = []
 		if self.current_directory is None:
 			if directory and self.showMountpoints:
@@ -138,19 +137,19 @@ class FileList(MenuList):
 			for p in harddiskmanager.getMountedPartitions():
 				path = os_path.join(p.mountpoint, "")
 				if path not in self.inhibitMounts and not self.inParentDirs(path, self.inhibitDirs):
-					self.list.append(FileEntryComponent(name = p.description, absolute = path, isDir = True))
-			files = [ ]
-			directories = [ ]
+					self.list.append(FileEntryComponent(name=p.description, absolute=path, isDir=True))
+			files = []
+			directories = []
 		elif directory is None:
-			files = [ ]
-			directories = [ ]
+			files = []
+			directories = []
 		elif self.useServiceRef:
 			root = eServiceReference("2:0:1:0:0:0:0:0:0:0:" + directory)
 			if self.additional_extensions:
 				root.setName(self.additional_extensions)
 			serviceHandler = eServiceCenter.getInstance()
 			list = serviceHandler.list(root)
-			while 1:
+			while True:
 				s = list.getNext()
 				if not s.valid():
 					del list
@@ -175,14 +174,14 @@ class FileList(MenuList):
 						files.remove(x)
 		if directory is not None and self.showDirectories and not self.isTop:
 			if directory == self.current_mountpoint and self.showMountpoints:
-				self.list.append(FileEntryComponent(name = "<" +_("List of Storage Devices") + ">", absolute = None, isDir = True))
+				self.list.append(FileEntryComponent(name="<" + _("List of Storage Devices") + ">", absolute=None, isDir=True))
 			elif (directory != "/") and not (self.inhibitMounts and self.getMountpoint(directory) in self.inhibitMounts):
-				self.list.append(FileEntryComponent(name = "<" +_("Parent Directory") + ">", absolute = '/'.join(directory.split('/')[:-2]) + '/', isDir = True))
+				self.list.append(FileEntryComponent(name="<" + _("Parent Directory") + ">", absolute='/'.join(directory.split('/')[:-2]) + '/', isDir=True))
 		if self.showDirectories:
 			for x in directories:
 				if not (self.inhibitMounts and self.getMountpoint(x) in self.inhibitMounts) and not self.inParentDirs(x, self.inhibitDirs):
 					name = x.split('/')[-2]
-					self.list.append(FileEntryComponent(name = name, absolute = x, isDir = True))
+					self.list.append(FileEntryComponent(name=name, absolute=x, isDir=True))
 		if self.showFiles:
 			for x in files:
 				if self.useServiceRef:
@@ -203,9 +202,9 @@ class FileList(MenuList):
 					EXext = "nothing"
 				if (self.matchingPattern is None) or (EXext in self.matchingPattern):
 					if nx is None:
-						self.list.append(FileEntryComponent(name = name, absolute = x , isDir = False))
+						self.list.append(FileEntryComponent(name=name, absolute=x, isDir=False))
 					else:
-						res = [ (x, False) ]
+						res = [(x, False)]
 						res.append((eListboxPythonMultiContent.TYPE_TEXT, 40, 2, 1000, 22, 0, RT_HALIGN_LEFT, name + " [" + self.getTSLength(path) + "]"))
 #						png = LoadPixmap("/usr/lib/enigma2/python/Plugins/Extensions/DreamExplorer/res/movie.png")
 #						res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, 12, 3, 20, 20, png))
@@ -217,15 +216,15 @@ class FileList(MenuList):
 			select2 = select
 			if select.endswith("/"):
 				select2 = os_path.basename(select[:-1])
-#			print "dir,select",directory,select,select2
+#			print("dir,select",directory,select,select2)
 			for x in self.list:
-#				print "xx",x
+#				print("xx",x)
 				p = x[0][0]
-#				print "pp",p
+#				print("pp",p)
 				if isinstance(p, eServiceReference):
 					p = p.getPath()
 				if p == select or p == select2:
-#					print "moveto",i
+#					print("moveto",i)
 					self.moveToIndex(i)
 				i += 1
 
@@ -246,7 +245,7 @@ class FileList(MenuList):
 				se = self.current_directory
 			else:
 				se = os_path.basename(self.current_directory)
-		self.changeDir(self.getSelection()[0], select = se)
+		self.changeDir(self.getSelection()[0], select=se)
 
 	def getFilename(self):
 		if self.getSelection() is None:
@@ -295,7 +294,7 @@ class FileList(MenuList):
 				txt = info.getName(serviceref)
 				description = info.getInfoString(serviceref, iServiceInformation.sDescription)
 				if not txt.endswith(".ts"):
-					if description is not "":
+					if description != "":
 						return txt + ' - ' + description
 					else:
 						return txt
@@ -341,5 +340,3 @@ class FileList(MenuList):
 		#self.l.invalidate()
 		self.l.setList(self.list)
 		self.moveToIndex(0)
-
-

@@ -1,0 +1,123 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-04-16 16:22+0430\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Connection failed! Aborted!"
+msgstr ""
+
+msgid "Delete IPTV Bouquets before Import"
+msgstr ""
+
+msgid "IPTV Import"
+msgstr ""
+
+msgid "Import Arabic Channels in Bouquet"
+msgstr ""
+
+msgid "Import Bundesliga Channels in Bouquet"
+msgstr ""
+
+msgid "Import Ex-Yu Channels in Bouquet"
+msgstr ""
+
+msgid "Import Finland Channels in Bouquet"
+msgstr ""
+
+msgid "Import France Channels in Bouquet"
+msgstr ""
+
+msgid "Import German Sport Channels in Bouquet"
+msgstr ""
+
+msgid "Import Germany Channels in Bouquet"
+msgstr ""
+
+msgid "Import Italian Channels in Bouquet"
+msgstr ""
+
+msgid "Import Netherlands Channels in Bouquet"
+msgstr ""
+
+msgid "Import Polish Channels in Bouquet"
+msgstr ""
+
+msgid "Import Portugal Channels in Bouquet"
+msgstr ""
+
+msgid "Import Romania Channels in Bouquet"
+msgstr ""
+
+msgid "Import Sky Germany Channels in Bouquet"
+msgstr ""
+
+msgid "Import Spain Channels in Bouquet"
+msgstr ""
+
+msgid "Import Suisse and Austria Channels in Bouquet"
+msgstr ""
+
+msgid "Import Sweden Channels in Bouquet"
+msgstr ""
+
+msgid "Import Turkey Channels in Bouquet"
+msgstr ""
+
+msgid "Import UK Channels in Bouquet"
+msgstr ""
+
+msgid "Import US Channels in Bouquet"
+msgstr ""
+
+msgid "Import VOD in Bouquet"
+msgstr ""
+
+msgid "Import XXX Channels in Bouquet"
+msgstr ""
+
+msgid "Import successful!"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Portal"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Show IPTV Importer in Extensions"
+msgstr ""
+
+msgid "Show IPTV Importer in Menu"
+msgstr ""
+
+msgid "Show IPTV Importer in Plugins"
+msgstr ""
+
+msgid "Start Import"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "none"
+msgstr ""

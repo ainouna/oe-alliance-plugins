@@ -7,7 +7,8 @@ from Components.config import config, ConfigSubsection, ConfigInteger, ConfigSel
 modelist = {"1": _("Off"), "2": _("On"), "3": _("Auto")}
 
 config.plugins.FanSetup = ConfigSubsection()
-config.plugins.FanSetup.mode = ConfigSelection(choices = modelist, default = "3")
+config.plugins.FanSetup.mode = ConfigSelection(choices=modelist, default="3")
+
 
 class FanSetupScreen(Screen, ConfigListScreen):
 	skin = """
@@ -41,11 +42,11 @@ class FanSetupScreen(Screen, ConfigListScreen):
 		}, -2)
 
 		self.list = []
-		ConfigListScreen.__init__(self, self.list, session = self.session)
+		ConfigListScreen.__init__(self, self.list, session=self.session)
 
 		mode = config.plugins.FanSetup.mode.value
 
-		self.mode = ConfigSelection(choices = modelist, default = mode)
+		self.mode = ConfigSelection(choices=modelist, default=mode)
 		self.list.append(getConfigListEntry(_("Fan mode"), self.mode))
 		self["config"].list = self.list
 		self["config"].l.setList(self.list)
@@ -71,6 +72,7 @@ class FanSetupScreen(Screen, ConfigListScreen):
 		setConfiguredSettings()
 		self.close()
 
+
 def applySettings(mode):
 	setMode = ""
 	if mode == 1:
@@ -81,7 +83,7 @@ def applySettings(mode):
 
 	else:
 		setMode = "3"
-	
+
 	try:
 		file = open("/proc/stb/fp/fan", "w")
 		file.write('%s' % setMode)
@@ -89,17 +91,22 @@ def applySettings(mode):
 	except:
 		return
 
+
 def setConfiguredSettings():
 	applySettings(int(config.plugins.FanSetup.mode.value))
+
 
 def main(session, **kwargs):
 	session.open(FanSetupScreen)
 
+
 def startup(reason, **kwargs):
 	setConfiguredSettings()
 
+
 def FanMain(session, **kwargs):
 	session.open(FanSetupScreen)
+
 
 def FanSetup(menuid, **kwargs):
 	if getImageDistro() in ("miracleboxhd", "miraclebox"):
@@ -112,11 +119,12 @@ def FanSetup(menuid, **kwargs):
 			return [(_("FAN Control"), FanMain, "fan_control", None)]
 		else:
 			return []
-		
+
+
 def Plugins(**kwargs):
 	from os import path
 	if path.exists("/proc/stb/fp/fan"):
 		from Plugins.Plugin import PluginDescriptor
-		return [PluginDescriptor(name = _("Fan Control"), description = _("switch Fan On/Off"), where = PluginDescriptor.WHERE_MENU, fnc = FanSetup),
-					PluginDescriptor(name = "Fan Control", description = "", where = PluginDescriptor.WHERE_SESSIONSTART, fnc = startup)]
+		return [PluginDescriptor(name=_("Fan Control"), description=_("switch Fan On/Off"), where=PluginDescriptor.WHERE_MENU, fnc=FanSetup),
+					PluginDescriptor(name="Fan Control", description="", where=PluginDescriptor.WHERE_SESSIONSTART, fnc=startup)]
 	return []

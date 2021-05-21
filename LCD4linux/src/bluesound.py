@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-try:
-	import urllib2
-	url2 = True
-except:
-	url2 = False
-	import urllib
+from __future__ import print_function
+from six.moves.urllib.request import urlopen
 from xml.etree import ElementTree as ET
+
 
 def parseXmlToJson(xml):
 	response = {}
@@ -16,15 +13,14 @@ def parseXmlToJson(xml):
 			response[child.tag] = child.text or ''
 	return response
 
+
 class BlueSound:
-	def __init__(self,ip):
+	def __init__(self, ip):
 		self.IP = ip
 		self.baseUrl = "http://" + ip + ":11000/"
+
 	def Urlget(self, url):
-		if url2:
-			f = urllib2.urlopen(url, timeout = 1)
-		else:
-			f = urllib.urlopen(url)
+		f = urlopen(url, timeout=1)
 		fr = f.read()
 		fc = f.code
 		f.close()
@@ -32,7 +28,7 @@ class BlueSound:
 
 	def getStatus(self):
 		try:
-			content,resp=self.Urlget(self.baseUrl + "Status")
+			content, resp = self.Urlget(self.baseUrl + "Status")
 			if resp == 200:
 				xml = ET.fromstring(content)
 				r = parseXmlToJson(xml)
@@ -40,7 +36,7 @@ class BlueSound:
 			else:
 				return {}
 		except:
-			print "Bluesound Error"
+			print("Bluesound Error")
 			from traceback import format_exc
-			print "Error:",format_exc() 
+			print("Error:", format_exc())
 			return {}

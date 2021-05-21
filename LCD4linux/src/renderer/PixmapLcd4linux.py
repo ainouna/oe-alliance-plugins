@@ -1,4 +1,4 @@
-from Renderer import Renderer
+from Components.Renderer.Renderer import Renderer
 from enigma import ePixmap, eTimer
 from Tools.BoundFunction import boundFunction
 import os
@@ -7,6 +7,7 @@ try:
 	DPKG = True
 except:
 	DPKG = False
+
 
 class PixmapLcd4linux(Renderer):
 	def __init__(self):
@@ -25,7 +26,7 @@ class PixmapLcd4linux(Renderer):
 		self.changed((self.CHANGED_DEFAULT,))
 
 	def changed(*s):
-		sel=s[0]
+		sel = s[0]
 		sel.L4Ltimer.stop()
 		if os.path.isfile("/tmp/l4ldisplay.png"):
 			try:
@@ -34,7 +35,7 @@ class PixmapLcd4linux(Renderer):
 					if sel.instance:
 						if sel.swap:
 							if not os.path.isfile("/tmp/l4ldisplaycp.png"):
-								os.symlink("/tmp/l4ldisplay.png","/tmp/l4ldisplaycp.png")
+								os.symlink("/tmp/l4ldisplay.png", "/tmp/l4ldisplaycp.png")
 							sel.instance.setPixmapFromFile("/tmp/l4ldisplaycp.png")
 						else:
 							sel.instance.setPixmapFromFile("/tmp/l4ldisplay.png")
@@ -44,4 +45,4 @@ class PixmapLcd4linux(Renderer):
 						sel.mTime = 0
 			except:
 				pass
-			sel.L4Ltimer.start(200,True)
+			sel.L4Ltimer.start(200, True)
