@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
 import xml.dom.minidom
 import re
@@ -51,7 +52,7 @@ class eAITSectionReader:
 			item["orgid"] = int(self.__item(application, "orgid"))
 			item["appid"] = int(self.__item(application, "appid"))
 			item["profile"] = int(self.__item(application, "profile"))
-		print "[HBBTV] __application", item
+		print("[HBBTV] __application", item)
 		return item
 
 	def doParseApplications(self):
@@ -79,7 +80,7 @@ class eAITSectionReader:
 		document = ""
 		try:
 			document = os.popen(self.mCommand).read()
-		except Exception, ErrMsg:
+		except Exception as ErrMsg:
 			vbcfg.ERR(ErrMsg)
 			return False
 		if len(document) == 0:
@@ -90,26 +91,26 @@ class eAITSectionReader:
 			document = re.sub("%", " ", document)
 			document = document.decode("cp1252").encode("utf-8")
 			document = "<URL>" + document + "</URL>"
-			# print "[HBBTV] doOpen", document
+			# print("[HBBTV] doOpen", document)
 			try:
 				self.mDocument = xml.dom.minidom.parseString(document)
-			except Exception, ErrMsg:
+			except Exception as ErrMsg:
 				vbcfg.ERR("XML parse: %s" % ErrMsg)
 				return False
 		except Exception as ex:
-			print "[aitreader]", str(ex)
+			print("[aitreader]", str(ex))
 			return False
 		return True
 
 	def doDump(self):
 		for x in self.getApplicationList():
-			print "[HBBTV] Name  :", x["name"]
-			print "[HBBTV] URL   :", x["url"]
-			print "[HBBTV] OrgID :", x["orgid"]
-			print "[HBBTV] AppID :", x["appid"]
-			print "[HBBTV] Control Code :", x["control"]
-			print "[HBBTV] Profile Code :", x["profile"]
-			print "[HBBTV]"
+			print("[HBBTV] Name  :", x["name"])
+			print("[HBBTV] URL   :", x["url"])
+			print("[HBBTV] OrgID :", x["orgid"])
+			print("[HBBTV] AppID :", x["appid"])
+			print("[HBBTV] Control Code :", x["control"])
+			print("[HBBTV] Profile Code :", x["profile"])
+			print("[HBBTV]")
 
 
 def unit_test(demux, pmtid, sid):

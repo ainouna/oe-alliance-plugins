@@ -1,3 +1,4 @@
+from __future__ import print_function
 from Plugins.Plugin import PluginDescriptor
 
 from Screens.Screen import Screen
@@ -32,11 +33,11 @@ debug_mode_modem_mgr = False
 def printDebugModemMgr(msg):
 	global debug_mode_modem_mgr
 	if debug_mode_modem_mgr:
-		print "[ModemManager Plugin] Debug >>", msg
+		print("[ModemManager Plugin] Debug >>", msg)
 
 
 def printInfoModemMgr(msg):
-	print "[ModemManager Plugin] Info >>", msg
+	print("[ModemManager Plugin] Info >>", msg)
 
 
 isEmpty = lambda x: x is None or len(x) == 0
@@ -51,8 +52,8 @@ class DeviceEventListener:
 			self.sock.bind((os.getpid(), 1))
 			self.notifier = eSocketNotifier(self.sock.fileno(), POLLIN | POLLPRI)
 			self.notifier.callback.append(self.cbEventHandler)
-		except Exception, msg:
-			print "[ModemManager Plugin] Error >>", msg
+		except Exception as msg:
+			print("[ModemManager Plugin] Error >>", msg)
 			self.sock.close()
 
 	def cbEventHandler(self, sockfd):
@@ -93,12 +94,12 @@ class TaskManager:
 		self.taskList.append([command + '\n', cbDataFunc, cbCloseFunc])
 
 	def dump(self):
-		print "############### TASK ###############"
-		print "Current Task Index :", self.taskIdx
-		print "Current Task Instance :", self.gTaskInstance
-		print "Occur Error :", self.occurError
-		print "Task List:\n", self.taskList
-		print "####################################"
+		print("############### TASK ###############")
+		print("Current Task Index :", self.taskIdx)
+		print("Current Task Instance :", self.gTaskInstance)
+		print("Occur Error :", self.occurError)
+		print("Task List:\n", self.taskList)
+		print("####################################")
 
 	def error(self):
 		printInfoModemMgr("set task error!!")
@@ -113,7 +114,7 @@ class TaskManager:
 		self.reset()
 		self.taskList = []
 		self.cbSetStatusCB = None
-		print "clear task!!"
+		print("clear task!!")
 
 	def index(self):
 		self.taskIdx
@@ -538,7 +539,7 @@ class ModemManual(Screen):
 		try:
 			x = self["menulist"].getCurrent()[1]
 			self.region, self.apn, self.uid, self.pwd, self.pin, self.phone = x.get("region"), x.get("apn"), x.get("user"), x.get("password"), x.get('pin'), x.get('phone')
-		except Exception, err:
+		except Exception as err:
 			pass
 		if noUpdate:
 			return
@@ -601,7 +602,7 @@ class ModemManual(Screen):
 				d['pin'] = x.get('pin')
 				d['phone'] = x.get('phone')
 				lvApnItems.append((name, d))
-		except Exception, err:
+		except Exception as err:
 			pass
 		finally:
 			del handle
@@ -948,17 +949,17 @@ class ModemManager(Screen):
 		self.printStatus(idx, STATUS)
 
 	def cbStep1PrintAvail(self, data):
-		print data
+		print(data)
 		if data.find('modules.dep') > -1:
 			self.forceStop = True
 
 	def cbStep3PrintAvail(self, data):
-		print data
+		print(data)
 		if data.find('no modem was detected') > -1:
 			self.forceStop = True
 
 	def cbPrintAvail(self, data):
-		print data
+		print(data)
 
 	def cbPrintClose(self, ret):
 		if self.forceStop:
@@ -977,7 +978,7 @@ class ModemManager(Screen):
 		self.refreshStatusTimer.start(1000)
 
 	def cbRunWvDialAvail(self, data):
-		print data
+		print(data)
 		if data.find('Bad init') > -1 or data.find('Invalid dial') > -1 or data.find('No Carrier') > -1:
 			self.forceStop = True
 			return
@@ -1002,15 +1003,15 @@ class ModemManager(Screen):
 			datalist = file('/etc/wvdial.conf').read().splitlines()
 			for x in datalist:
 				if x.startswith('Modem ='):
-					print x
+					print(x)
 					info['Modem'] = x[7:].strip()
 				elif x.startswith('Init2 ='):
-					print x
+					print(x)
 					info['Init'] = x[7:].strip()
 				elif x.startswith('Baud ='):
-					print x
+					print(x)
 					info['Baud'] = x[6:].strip()
-		except Exception, err:
+		except Exception as err:
 			printDebugModemMgr("getModemInfo Error : [%s]" % (str(err)))
 			# TODO : occur error!!
 			return
@@ -1175,8 +1176,8 @@ class ModemManager(Screen):
 						d = tmp[tmp.find('Driver=') + 7:]
 						if d != '(none)':
 							tmp_device['Interface'] = d
-			except Exception, errmsg:
-				print errmsg
+			except Exception as errmsg:
+				print(errmsg)
 		if len(tmp_device):
 			parsed_usb_list.append(tmp_device)
 		printDebugModemMgr("PARSED DEVICE LIST : " + str(parsed_usb_list))
@@ -1205,18 +1206,18 @@ def autostart(reason, **kwargs):
 			is_running = False
 		cmd = args
 		if config.plugins.gmodemmanager.autostart.value:
-			print "[3GModemManager] AUTOSTART"
+			print("[3GModemManager] AUTOSTART")
 			if is_running:
-				print "[3GModemManager] already started"
+				print("[3GModemManager] already started")
 			else:
-				print "[3GModemManager] starting ..."
+				print("[3GModemManager] starting ...")
 				os.system(cmd)
-				print "[3GModemManager] disable all others network adapters ..."
+				print("[3GModemManager] disable all others network adapters ...")
 				os.system("ifconfig eth0 down")
 		elif config.plugins.gmodemmanager.autostart.value == False and is_running == True:
-				print "[3GModemManager] stopping ..."
+				print("[3GModemManager] stopping ...")
 				os.system(cmd)
-				print "[3GModemManager] disable all others network adapters ..."
+				print("[3GModemManager] disable all others network adapters ...")
 				os.system("ifconfig eth0 up")
 
 

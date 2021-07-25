@@ -1,3 +1,4 @@
+from __future__ import print_function
 # for localized messages
 from . import _
 
@@ -253,7 +254,7 @@ class Filebrowser(Screen):
 			return
 		md5sum_A = os.popen("md5sum %s | awk \'{print $1}\'" % (self.gbin)).readline().strip()
 		md5sum_B = os.popen("cat %s.md5 | awk \'{print $1}\'" % (self.gbin)).readline().strip()
-		#print "[FirmwareUpgrade] - Verify : file[%s], md5[%s]"%(md5sum_A,md5sum_B)
+		#print("[FirmwareUpgrade] - Verify : file[%s], md5[%s]"%(md5sum_A,md5sum_B))
 
 		if md5sum_A != md5sum_B:
 			self.session.open(MessageBox, _("File failed data integrity test.\nCalculated: [%s]\ninstead of: [%s]" % (md5sum_A, md5sum_B)), MessageBox.TYPE_INFO, timeout=10)
@@ -273,7 +274,7 @@ class Filebrowser(Screen):
 	# cbfunc(string) : callback function(function)
 	def doDownload(self, uri, tf, bd='/tmp', cbfunc=None, errmsg="Failed to download."):
 		tar = bd + "/" + tf
-		#print "[FirmwareUpgrade] - Download Info : [%s][%s]" % (uri, tar)
+		#print("[FirmwareUpgrade] - Download Info : [%s][%s]" % (uri, tar))
 
 		def doHook(blockNumber, blockSize, totalSize):
 			if blockNumber * blockSize > totalSize and cbfunc is not None:
@@ -285,12 +286,13 @@ class Filebrowser(Screen):
 
 
 
+
 			f, h = urlretrieve(uri, tar, doHook)
 		except (Exception) as ex:
 			msg = str(ex)
 			if hasattr(ex, "args") and ex.args:
 				msg = " ".join([str(x) for x in ex.args[:3]])
-			print "[FirmwareUpgrade] - Failed to download:", uri, str(ex)
+			print("[FirmwareUpgrade] - Failed to download:", uri, str(ex))
 			self.session.open(MessageBox, "%s\n%s" % (_(errmsg), msg), MessageBox.TYPE_INFO, timeout = 10)
 			del opener
 			return False

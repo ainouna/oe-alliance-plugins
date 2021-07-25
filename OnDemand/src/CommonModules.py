@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from __future__ import print_function
 
 # for localized messages
 from . import _
@@ -22,7 +23,6 @@ from . import _
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.GUIComponent import GUIComponent
-from Components.HTMLComponent import HTMLComponent
 from Components.config import config
 from Screens.Screen import Screen
 from Screens.InfoBar import MoviePlayer as MP_parent
@@ -55,7 +55,7 @@ class Rect:
 		self.h = height
 
 
-class MainMenuList(HTMLComponent, GUIComponent):
+class MainMenuList(GUIComponent):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.picload = ePicLoad()
@@ -96,10 +96,10 @@ class MainMenuList(HTMLComponent, GUIComponent):
 	def showArrows(self):
 		rowsshown = self.listHeight / self.itemHeight
 		if self.totalitems > rowsshown:
-			print 'TRUE'
+			print('TRUE')
 			return 1
 		else:
-			print 'FALSE'
+			print('FALSE')
 			return 0
 
 	def setItemsPerPage(self):
@@ -143,7 +143,7 @@ class MainMenuList(HTMLComponent, GUIComponent):
 		self.selectionChanged()
 
 
-class EpisodeList(HTMLComponent, GUIComponent):
+class EpisodeList(GUIComponent):
 	def __init__(self, iconDefault, showIcon):
 		GUIComponent.__init__(self)
 		self.picload = ePicLoad()
@@ -322,7 +322,7 @@ class EpisodeList(HTMLComponent, GUIComponent):
 			else:
 				return str(icon_name[1])
 		except (Exception) as exception:
-			print "getThumbnailName: No image found: ", exception, " for: ", x
+			print("getThumbnailName: No image found: ", exception, " for: ", x)
 			return ''
 
 ###########################################################################
@@ -435,7 +435,7 @@ class MyHTTPConnection(HTTPConnection):
 			self.host = answer.rrset.items[0].address
 			self.sock = socket.create_connection((self.host, self.port))
 		except (Exception) as exception:
-			print "MyHTTPConnection: Failed to Connect to: ", primaryDNS, " , error: ", exception
+			print("MyHTTPConnection: Failed to Connect to: ", primaryDNS, " , error: ", exception)
 
 			try:
 				secondaryDNS = str(config.ondemand.SecondaryDNS.value)
@@ -451,7 +451,7 @@ class MyHTTPConnection(HTTPConnection):
 					self.sock = socket.create_connection((self.host, self.port))
 
 			except (Exception) as exception:
-				print "MyHTTPConnection: Failed to Connect to: ", secondaryDNS, " , error: ", exception
+				print("MyHTTPConnection: Failed to Connect to: ", secondaryDNS, " , error: ", exception)
 
 
 class MyHTTPHandler(urllib2.HTTPHandler):

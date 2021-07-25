@@ -16,7 +16,7 @@
 
 from __future__ import print_function, absolute_import
 from __future__ import division
-Version = "V5.0-r8w"
+Version = "V5.0-r8x"
 from .import _
 from enigma import eConsoleAppContainer, eActionMap, iServiceInformation, iFrontendInformation, eDVBResourceManager, eDVBVolumecontrol
 from enigma import getDesktop, getEnigmaVersionString, eEnv
@@ -33,6 +33,7 @@ from Components.Pixmap import Pixmap
 from Components.AVSwitch import AVSwitch
 from Components.Lcd import LCD
 from Components.SystemInfo import SystemInfo
+from Components.Renderer.Picon import getPiconName
 from Screens.InputBox import InputBox
 from Screens.MessageBox import MessageBox
 from Screens.InfoBar import InfoBar
@@ -108,9 +109,15 @@ import six
 from six.moves.urllib.parse import urlencode, quote, quote_plus, urlparse, urlunparse
 from six.moves.urllib.request import urlopen, Request, urlretrieve, FancyURLopener
 from six.moves.BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from six.moves.html_parser import HTMLParser
 from six.moves.socketserver import ThreadingMixIn
 from six.moves import queue
+
+if six.PY2:
+	from HTMLParser import HTMLParser
+	_unescape = HTMLParser().unescape
+else:
+	from html import unescape as _unescape
+
 
 SIGN = u"°"
 L4LElist = L4Lelement()
@@ -2395,7 +2402,7 @@ def getFsize(text, f):
 def Code_utf8(wert):
 	if wert is None:
 		wert = ""
-	wert = HTMLParser().unescape(wert)
+	wert = _unescape(wert)
 	if six.PY2:
 		wert = wert.replace('\xc2\x86', '').replace('\xc2\x87', '').decode("utf-8", "ignore").encode("utf-8") or ""
 		return codecs.decode(wert, 'UTF-8')
@@ -2695,44 +2702,47 @@ def virtBRI(LCD):
 	else:
 		return ((0.08 * vb) + 0.2)
 
-def SensorRead(dat,isTemp=False):
+
+def SensorRead(dat, isTemp=False):
 	line = ""
 	T = 0
 	if os.path.isfile(dat) == True:
 		line = open(dat).readline().strip()
-		i=0
-		while len(line)<1 and i<10:
+		i = 0
+		while len(line) < 1 and i < 10:
 			L4log("Sensor-Wait")
-			i+=1
+			i += 1
 			sleep(0.01)
 			line = open(dat).readline().strip()
 		if line.find("temperature") >= 0:
-			line=line[line.find("temperature"):]
-		T = float("0"+re.sub("[^0-9^.]", "", line))
+			line = line[line.find("temperature"):]
+		T = float("0" + re.sub("[^0-9^.]", "", line))
 		if isTemp and T > 1000.:
 			T /= 1000.
 	return T
 
+
 def GetTempSensor():
 	d = []
-	d+= glob.glob("/proc/stb/sensors/temp*/value") # e.g. Dreambox
-	d+= glob.glob("/sys/class/thermal/thermal_zone0/temp") # e.g. GigaBlue UE4K
-	d+= glob.glob("/proc/hisi/msp/pm_cpu") # e.g. Octagon SF8008
-	d+= glob.glob("/proc/stb/fp/temp_sensor") # e.g. ZGemma H9Twin
-	d+= glob.glob("/proc/stb/sensors/temp/value") # unverified, unknown Boxes
-	d+= glob.glob("/proc/stb/fp/temp_sensor_avs") # unverified, unknown Boxes
-	d+= glob.glob("/proc/stb/power/avs") # unverified, unknown Boxes
-	L4logE("looking for Temp",str(d))
+	d += glob.glob("/proc/stb/sensors/temp*/value") # e.g. Dreambox
+	d += glob.glob("/sys/class/thermal/thermal_zone0/temp") # e.g. GigaBlue UE4K
+	d += glob.glob("/proc/hisi/msp/pm_cpu") # e.g. Octagon SF8008
+	d += glob.glob("/proc/stb/fp/temp_sensor") # e.g. ZGemma H9Twin
+	d += glob.glob("/proc/stb/sensors/temp/value") # unverified, unknown Boxes
+	d += glob.glob("/proc/stb/fp/temp_sensor_avs") # unverified, unknown Boxes
+	d += glob.glob("/proc/stb/power/avs") # unverified, unknown Boxes
+	L4logE("looking for Temp", str(d))
 	for ts in d:
 		try:
-			Temp = SensorRead(ts,True)
+			Temp = SensorRead(ts, True)
 			usable = float(Temp) > 10.0 and float(Temp) < 100.0
 			L4logE("found Temp: '" + ts + "', raw data: '" + str(Temp) + "', ", "usable: " + str(usable))
 			if usable:
 				return ts
 		except:
-			L4logE("Error Temp: ",ts)
+			L4logE("Error Temp: ", ts)
 	return ""
+
 
 def ICSdownloads():
 	global ICS
@@ -4664,6 +4674,7 @@ except:
 	L4log("Sonos not registered")
 from .ymc import YMC
 from .bluesound import BlueSound
+
 
 class GrabOSD:
 	def __init__(self, cmd):
@@ -9775,7 +9786,7 @@ class UpdateStatus(Screen):
 				city = "q=%s" % quote(ort)
 				if ort.startswith("wc:"):
 					city = "id=%s" % ort[3:]
-				self.feedurl = "http://api.openweathermap.org/data/2.5/weather?%s&lang=%s&units=metric%s" % (city,la[:2],apkey)
+				self.feedurl = "http://api.openweathermap.org/data/2.5/weather?%s&lang=%s&units=metric%s" % (city, la[:2], apkey)
 				getPage(six.ensure_binary(self.feedurl)).addCallback(boundFunction(self.downloadOpenListCallback, wetter)).addErrback(self.downloadListError)
 				self.feedurl = "https://api.openweathermap.org/data/2.5/onecall?&lon=%s&lat=%s&units=metric&exclude=hourly,minutely,current&lang=%s%s" % (self.Long[wetter], self.Lat[wetter], la[:2], apkey)
 				L4log(self.feedurl)
@@ -11511,7 +11522,7 @@ def LCD4linuxPIC(self, session):
 		t = ["not found"]
 		try:
 			r = urlopen(HTTPurl)
-			t = HTMLParser().unescape(r.read()[:500].decode()).split("\n")
+			t = _unescape(r.read()[:500].decode()).split("\n")
 			r.close()
 		except:
 			pass
@@ -12099,10 +12110,12 @@ def LCD4linuxPIC(self, session):
 					name2 = self.Lchannel_name + ".png"
 					name4 = self.Lchannel_name + ".png"
 					name3 = self.Lchannel_name2.replace('\x87', '').replace('\x86', '') + ".png"
+				name5 = getPiconName(self.LsreftoString)
 				PIC.append(os.path.join(P2, name3))
 				PIC.append(os.path.join(P2, name2))
 				PIC.append(os.path.join(P2, name))
 				PIC.append(os.path.join(P2, name4))
+				PIC.append(os.path.join(P2, name5))
 				fields = picon.split("_", 3)
 				if fields[0] in ("4097", "5001", "5002", "5003"):
 					fields[0] = "1"
@@ -12113,6 +12126,7 @@ def LCD4linuxPIC(self, session):
 					PIC.append(os.path.join(P2A, name2))
 					PIC.append(os.path.join(P2A, name))
 					PIC.append(os.path.join(P2A, name4))
+					PIC.append(os.path.join(P2A, name5))
 					fields = picon.split("_", 3)
 					if fields[0] in ("4097", "5001", "5002", "5003"):
 						fields[0] = "1"

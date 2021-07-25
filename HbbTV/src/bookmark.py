@@ -1,3 +1,4 @@
+from __future__ import print_function
 import vbcfg
 
 
@@ -10,7 +11,7 @@ class BookmarkData:
 		self.mType = _type
 
 	def dump(self, _intent='  '):
-		print "[HBBTV] %s-> %d, %s, %s, %d, %d" % (_intent, self.mId, self.mTitle, self.mUrl, self.mParent, self.mType)
+		print("[HBBTV] %s-> %d, %s, %s, %d, %d" % (_intent, self.mId, self.mTitle, self.mUrl, self.mParent, self.mType))
 
 
 class CategoryData:
@@ -26,7 +27,7 @@ class CategoryData:
 		self.mBookmarks[_bookmark.mId] = _bookmark
 
 	def dump(self):
-		print "[HBBTV]   -> %d, %s" % (self.mId, self.mName)
+		print("[HBBTV]   -> %d, %s" % (self.mId, self.mName))
 		for key in self.mBookmarks.iterkeys():
 			self.mBookmarks[key].dump('      ')
 
@@ -71,7 +72,7 @@ class SimpleConfigParser:
 	def _get(self, _section, _option, _default):
 		try:
 			data = self.mConfig.get(_section, _option)
-		except Exception, e:
+		except Exception as e:
 			vbcfg.ERR(e)
 			return _default
 		else:
@@ -277,7 +278,7 @@ class BookmarkManager(SimpleConfigParser):
 				e = self.getNumber(s, 'type')
 				try:
 					categoryList[p].appendBookmark(BookmarkData(i, t, u, p, e))
-				except Exception, e:
+				except Exception as e:
 					self._del(s)
 			bx += 1
 		for key in categoryList.iterkeys():
@@ -294,10 +295,10 @@ class BookmarkManager(SimpleConfigParser):
 		if not self.mDebugEnable:
 			return
 		self.populate()
-		print "[HBBTV] -- snapshot --"
+		print("[HBBTV] -- snapshot --")
 		for key in self.mBookmarkRoot.iterkeys():
 			self.mBookmarkRoot[key].dump()
-		print "[HBBTV] --------------"
+		print("[HBBTV] --------------")
 
 	@staticmethod
 	def getInstance():

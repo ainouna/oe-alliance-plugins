@@ -1,3 +1,4 @@
+from __future__ import print_function
 # ReachView code is placed under the GPL license.
 # Written by Egor Fedorov (egor.fedorov@emlid.com)
 # Copyright (c) 2015, Emlid Limited
@@ -55,7 +56,7 @@ class Bluetoothctl:
         """Start bluetooth scanning process."""
         try:
             out = self.get_output("scan on")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
@@ -63,7 +64,7 @@ class Bluetoothctl:
         """Make device discoverable."""
         try:
             out = self.get_output("discoverable on")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
@@ -92,7 +93,7 @@ class Bluetoothctl:
         """Return a list of tuples of paired and discoverable devices."""
         try:
             out = self.get_output("devices")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -108,7 +109,7 @@ class Bluetoothctl:
         """Return a list of tuples of paired devices."""
         try:
             out = self.get_output("paired-devices")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -131,7 +132,7 @@ class Bluetoothctl:
         """Get device info by mac address."""
         try:
             out = self.get_output("info " + mac_address)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -142,7 +143,7 @@ class Bluetoothctl:
         self.passkey = None
         try:
             out = self.get_output("pair " + mac_address, 2)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -157,7 +158,7 @@ class Bluetoothctl:
         """Remove paired device by mac address, return success of the operation."""
         try:
             out = self.get_output("remove " + mac_address, 1)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -169,7 +170,7 @@ class Bluetoothctl:
         """Try to connect to a device by mac address."""
         try:
             out = self.get_output("connect " + mac_address, 1)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -181,7 +182,7 @@ class Bluetoothctl:
         """Try to disconnect to a device by mac address."""
         try:
             out = self.get_output("disconnect " + mac_address, 1)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -193,7 +194,7 @@ class Bluetoothctl:
         """Trust the device with the given MAC address"""
         try:
             out = self.get_output("trust " + mac_address)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -205,7 +206,7 @@ class Bluetoothctl:
         """Start agent"""
         try:
             out = self.get_output("agent NoInputNoOutput")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
@@ -213,7 +214,7 @@ class Bluetoothctl:
         """Start default agent"""
         try:
             out = self.get_output("default-agent")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
@@ -221,7 +222,7 @@ class Bluetoothctl:
         """Enable Pairable"""
         try:
             out = self.get_output("pairable on")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
@@ -229,7 +230,7 @@ class Bluetoothctl:
         """Disbale Pairable"""
         try:
             out = self.get_output("pairable off")
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
 
