@@ -4,6 +4,8 @@
 #
 # written by joergm6 @ IHAD
 # (Meteo-Station @ compilator)
+# (dynamic scaling for rectangle analog clockfaces and -hands and tested by Mr.Servo @ OpenA.TV + Turbohai @ IHAD)
+# (moon distance and moon illumination-ratio by Mr.Servo @ OpenA.TV)
 #
 #  This plugin is licensed under the The Non-Profit Open Software License version 3.0 (NPOSL-3.0)
 #  http://opensource.org/licenses/NPOSL-3.0
@@ -13,10 +15,10 @@
 #  distributed other than under the conditions noted above.
 #  Advertise with this Plugin is not allowed.
 #  For other uses, permission from the author is necessary.
-
+#
 from __future__ import print_function, absolute_import
 from __future__ import division
-Version = "V5.0-r8x"
+Version = "V5.0-r8z"
 from .import _
 from enigma import eConsoleAppContainer, eActionMap, iServiceInformation, iFrontendInformation, eDVBResourceManager, eDVBVolumecontrol
 from enigma import getDesktop, getEnigmaVersionString, eEnv
@@ -165,16 +167,18 @@ except:
 
 # globals
 L4LdoThread = True
-LCD4enigma2 = resolveFilename(SCOPE_CONFIG) # /etc/enigma2/
-LCD4plugin = resolveFilename(SCOPE_PLUGINS) # /usr/lib/enigma2/python/Plugins/
+LCD4enigma2config = resolveFilename(SCOPE_CONFIG) # /etc/enigma2/
+LCD4enigma2plugin = resolveFilename(SCOPE_PLUGINS) # /usr/lib/enigma2/python/Plugins/
 LCD4lib = resolveFilename(SCOPE_LIBDIR) # /usr/lib/
 LCD4etc = resolveFilename(SCOPE_SYSETC) # /etc/
 LCD4bin = eEnv.resolve("${bindir}") + "/" # /usr/bin/
 LCD4python = eEnv.resolve("${PYTHONPATH}") + "/" # /usr/lib/enigma2/python/
 LCD4share = eEnv.resolve("${datarootdir}") + "/" # /usr/share/
-LCD4config = LCD4enigma2 + "lcd4config" # /etc/enigma2/lcd4config
 LCD4picon = LCD4share + "enigma2/picon/" #/usr/share/enigma2/picon/
-Data = LCD4plugin + "Extensions/LCD4linux/data/" # /usr/lib/enigma2/python/Plugins/Extensions/LCD4linux/data/
+LCD4fonts = resolveFilename(SCOPE_FONTS) # /usr/share/fonts/
+LCD4config = LCD4enigma2config + "lcd4config" # /etc/enigma2/lcd4config
+LCD4plugin = LCD4enigma2plugin + "Extensions/LCD4linux/" # /usr/lib/enigma2/python/Plugins/Extensions/LCD4linux/
+Data = LCD4plugin + "data/" # /usr/lib/enigma2/python/Plugins/Extensions/LCD4linux/data/
 if getDisplayType() in ('colorlcd220'):
 	LCD4default = Data + "default.colorlcd220"
 elif getDisplayType() in ('colorlcd400'):
@@ -191,15 +195,15 @@ elif getDisplayType() in ('bwlcd255'):
 	LCD4default = Data + "default.bwlcd255"
 else:
 	LCD4default = Data + "default.lcd"
-WetterPath = LCD4plugin + "Extensions/LCD4linux/wetter/"
-MeteoPath = LCD4plugin + "Extensions/LCD4linux/meteo/"
-FONTdefault = resolveFilename(SCOPE_FONTS) + "nmsbd.ttf" # /usr/share/fonts/
+WetterPath = LCD4enigma2plugin + "Extensions/LCD4linux/wetter/"
+MeteoPath = LCD4enigma2plugin + "Extensions/LCD4linux/meteo/"
+FONTdefault = LCD4fonts + "nmsbd.ttf"
 FONT = FONTdefault
 ClockBack = Data + "PAclock2.png"
 Clock = Data + "Clock"
 RecPic = Data + "rec.png"
-if os.path.islink(LCD4plugin + "Extensions/LCD4linux/tmp") == True:
-	TMP = os.path.realpath(LCD4plugin + "Extensions/LCD4linux/tmp") + "/"
+if os.path.islink(LCD4enigma2plugin + "Extensions/LCD4linux/tmp") == True:
+	TMP = os.path.realpath(LCD4enigma2plugin + "Extensions/LCD4linux/tmp") + "/"
 else:
 	TMP = "/tmp/"
 TMPL = TMP + "lcd4linux/"
@@ -362,6 +366,7 @@ InfoTuner = [("0", _("no")), ("A", _("db")), ("B", _("%")), ("AB", _("db + %")),
 InfoCPU = [("0", _("no")), ("P", _("%")), ("L0", _("Load@1min")), ("L1", _("Load@5min")), ("PL0", _("% + Load@1min")), ("PL1", _("% + Load@5min"))]
 HddType = [("0", _("show run+sleep")), ("1", _("show run"))]
 MailType = [("A1", _("Always All")), ("A2", _("Always New")), ("B2", _("Only New"))]
+MoonInfoSelect = [("000", _("off")), ("001", _("Distance only")), ("010", _("Illumination only")), ("100", _("Moonphase only")), ("011", _("Distance+Illumination")), ("101", _("Distance+Moonphase")), ("110", _("Illumination+Moonphase")), ("111", _("All Informations"))]
 ProzentType = [("30", _("30%")), ("35", _("35%")), ("40", _("40%")), ("45", _("45%")), ("50", _("50%")), ("55", _("55%")), ("60", _("60%")), ("65", _("65%")), ("70", _("70%")), ("75", _("75%")), ("80", _("80%")), ("85", _("85%")), ("90", _("90%")), ("95", _("95%")), ("97", _("97%")), ("98", _("98%")), ("100", _("100%"))]
 WarningType = [("0", _("off")), ("2", _("2%")), ("3", _("3%")), ("5", _("5%")), ("10", _("10%")), ("15", _("15%")), ("20", _("20%")), ("25", _("25%"))]
 MailKonto = [("1", _("1")), ("2", _("1-2")), ("3", _("1-3")), ("4", _("1-4")), ("5", _("1-5"))]
@@ -1073,6 +1078,7 @@ LCD4linux.MoonSize = ConfigSlider(default=60, increment=2, limits=(10, 300))
 LCD4linux.MoonFontSize = ConfigSlider(default=30, increment=1, limits=(8, 100))
 LCD4linux.MoonPos = ConfigSlider(default=10, increment=2, limits=(0, 1024))
 LCD4linux.MoonAlign = ConfigSelection(choices=AlignType, default="0")
+LCD4linux.MoonInfos = ConfigSelection(choices=MoonInfoSelect, default="111")
 LCD4linux.MoonSplit = ConfigYesNo(default=False)
 LCD4linux.MoonColor = ConfigSelection(choices=[("0", _("off"))] + Farbe, default="white")
 LCD4linux.MoonShadow = ConfigYesNo(default=False)
@@ -1610,6 +1616,7 @@ LCD4linux.MPMoonSize = ConfigSlider(default=60, increment=2, limits=(10, 300))
 LCD4linux.MPMoonFontSize = ConfigSlider(default=30, increment=1, limits=(8, 100))
 LCD4linux.MPMoonPos = ConfigSlider(default=10, increment=2, limits=(0, 1024))
 LCD4linux.MPMoonAlign = ConfigSelection(choices=AlignType, default="0")
+LCD4linux.MPMoonInfos = ConfigSelection(choices=MoonInfoSelect, default="111")
 LCD4linux.MPMoonSplit = ConfigYesNo(default=False)
 LCD4linux.MPMoonColor = ConfigSelection(choices=[("0", _("off"))] + Farbe, default="white")
 LCD4linux.MPMoonShadow = ConfigYesNo(default=False)
@@ -2071,6 +2078,7 @@ LCD4linux.StandbyMoonSize = ConfigSlider(default=60, increment=2, limits=(10, 30
 LCD4linux.StandbyMoonFontSize = ConfigSlider(default=30, increment=1, limits=(8, 100))
 LCD4linux.StandbyMoonPos = ConfigSlider(default=10, increment=2, limits=(0, 1024))
 LCD4linux.StandbyMoonAlign = ConfigSelection(choices=AlignType, default="0")
+LCD4linux.StandbyMoonInfos = ConfigSelection(choices=MoonInfoSelect, default="111")
 LCD4linux.StandbyMoonSplit = ConfigYesNo(default=False)
 LCD4linux.StandbyMoonColor = ConfigSelection(choices=[("0", _("off"))] + Farbe, default="white")
 LCD4linux.StandbyMoonShadow = ConfigYesNo(default=False)
@@ -4167,16 +4175,7 @@ def xmlInsert(Lis2):
 					xmlList[i] = xmlList[i].replace("\"%s\"" % xl[i2], "\"L4L%s\"" % xl[i2])
 	L4log("insert Skindata")
 	for i in Lis2:
-		ttt = LCD4linux.xmlLCDType.value.split("x")
-		aw = ah = 0
-		if LCD4linux.xmlLCDType.value == "96x64":
-			i = i.replace("\">", "\" id=\"2\">")
-		if getFB2(False):
-			if "PixmapLcd4linux" in i:
-				i = i.replace("0,0", "10,13")
-			aw = 10
-			ah = 171
-		xmlList.insert(-1, i.replace("$w$", str(int(ttt[0]) + aw)).replace("$h$", str(int(ttt[1]) + ah)))
+		xmlList.insert(-1, i)
 
 
 def xmlDelete(Num):
@@ -4215,14 +4214,25 @@ def xmlClear():
 def xmlRead():
 	global xmlList
 	xmlList = []
-	if os.path.isfile(LCD4enigma2 + "skin_user.xml"):
-		for i in open(LCD4enigma2 + "skin_user.xml").read().splitlines():
+	if os.path.isfile(LCD4enigma2config + "skin_user.xml"):
+		for i in open(LCD4enigma2config + "skin_user.xml").read().splitlines():
 			xmlList.append(i)
 		if len(xmlList) > 1:
 			while len(xmlList[-1]) < 2 and len(xmlList) > 1:
 				del xmlList[-1]
 	else:
-		xmlList = ["<skin>", "</skin>"]
+		sli = xmlReadData()
+		for i in sli[0]:
+			ttt = LCD4linux.xmlLCDType.value.split("x")
+			aw = ah = 0
+			if LCD4linux.xmlLCDType.value == "96x64":
+				i = i.replace("\">", "\" id=\"2\">")
+			if getFB2(False):
+				if "PixmapLcd4linux" in i:
+					i = i.replace("0,0", "10,13")
+				aw = 10
+				ah = 171
+		xmlList = ["\n".join(sli[0]).replace("$w$", str(int(ttt[0]) + aw)).replace("$h$", str(int(ttt[1]) + ah)), "</skin>"]
 
 
 def xmlReadData():
@@ -4241,20 +4251,23 @@ def xmlReadData():
 def xmlWrite():
 	if len(xmlList) > 1:
 		L4log("write SkinData")
-		fw = open(LCD4enigma2 + "skin_user.xml", "w")
+		fw = open(LCD4enigma2config + "skin_user.xml", "w")
 		for i in xmlList:
 			fw.write(i + "\n")
 		fw.close()
 
 
 def xmlSkin():
+	if LCD4linux.xmlType01.value == False and LCD4linux.xmlType02.value == False and LCD4linux.xmlType03.value == False:
+		rmFile(LCD4enigma2config + "skin_user.xml")
+		return True
 	change = False
 	xmlRead()
 	if xmlList[-1].find("/skin") == -1:
+		L4log("Error xmlSkin")
 		return False
 	sli = xmlReadData()
 	xf = xmlFind(1)
-	L4log("xf:" + str(xf))
 	if xf == -1 and LCD4linux.xmlType01.value == True:
 		change = True
 		xmlInsert(sli[1])
@@ -4707,10 +4720,10 @@ def InitWebIF():
 	L4log("WebIf-Init...")
 	i = 20
 	if LCD4linux.WebIfInitDelay.value == True:
-		while len(glob.glob(LCD4plugin + "Extensions/WebInterface/__init__.py*")) == 0 and i > 0:
+		while len(glob.glob(LCD4enigma2plugin + "Extensions/WebInterface/__init__.py*")) == 0 and i > 0:
 			sleep(0.5)
 			i -= 1
-	if i > 0 and len(glob.glob(LCD4plugin + "Extensions/WebInterface/__init__.py*")) > 0:
+	if i > 0 and len(glob.glob(LCD4enigma2plugin + "Extensions/WebInterface/__init__.py*")) > 0:
 		if i < 20:
 			L4log("WebIf-Wait %d s" % int((20 - i) / 2))
 			sleep(5)
@@ -4724,7 +4737,7 @@ def InitWebIF():
 		root.putChild(b"view", LCD4linuxwebView())
 		root.putChild(b"config", LCD4linuxConfigweb())
 		root.putChild(b"data", static.File(six.ensure_binary(Data[:-1])))
-		if os.path.exists(LCD4plugin + "Extensions/LCD4linux/WebInterface/web/external.xml"):
+		if os.path.exists(LCD4enigma2plugin + "Extensions/LCD4linux/WebInterface/web/external.xml"):
 			try:
 				addExternalChild(("lcd4linux", root, "LCD4linux", Version, True))
 				L4log("use new WebIf")
@@ -4734,7 +4747,7 @@ def InitWebIF():
 		else:
 			addExternalChild(("lcd4linux", root))
 			L4log("use old WebIf")
-		if os.path.exists(LCD4plugin + "Extensions/OpenWebif/pluginshook.src"):
+		if os.path.exists(LCD4enigma2plugin + "Extensions/OpenWebif/pluginshook.src"):
 			try:
 				addExternalChild(("lcd4linux", root, "LCD4linux", Version))
 				L4log("use OpenWebIf")
@@ -6368,6 +6381,7 @@ class LCDdisplayConfig(ConfigListScreen, Screen):
 				self.list2.append(getConfigListEntry(_("- Font Size"), LCD4linux.MoonFontSize))
 				self.list2.append(getConfigListEntry(_("- Position"), LCD4linux.MoonPos))
 				self.list2.append(getConfigListEntry(_("- Alignment"), LCD4linux.MoonAlign))
+				self.list2.append(getConfigListEntry(_("- Infolines"), LCD4linux.MoonInfos))
 				self.list2.append(getConfigListEntry(_("- Split Screen"), LCD4linux.MoonSplit))
 				self.list2.append(getConfigListEntry(_("- Color"), LCD4linux.MoonColor))
 				self.list2.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.MoonShadow))
@@ -7040,6 +7054,7 @@ class LCDdisplayConfig(ConfigListScreen, Screen):
 				self.list3.append(getConfigListEntry(_("- Font Size"), LCD4linux.MPMoonFontSize))
 				self.list3.append(getConfigListEntry(_("- Position"), LCD4linux.MPMoonPos))
 				self.list3.append(getConfigListEntry(_("- Alignment"), LCD4linux.MPMoonAlign))
+				self.list3.append(getConfigListEntry(_("- Infolines"), LCD4linux.MPMoonInfos))
 				self.list3.append(getConfigListEntry(_("- Split Screen"), LCD4linux.MPMoonSplit))
 				self.list3.append(getConfigListEntry(_("- Color"), LCD4linux.MPMoonColor))
 				self.list3.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.MPMoonShadow))
@@ -7546,6 +7561,7 @@ class LCDdisplayConfig(ConfigListScreen, Screen):
 				self.list4.append(getConfigListEntry(_("- Font Size"), LCD4linux.StandbyMoonFontSize))
 				self.list4.append(getConfigListEntry(_("- Position"), LCD4linux.StandbyMoonPos))
 				self.list4.append(getConfigListEntry(_("- Alignment"), LCD4linux.StandbyMoonAlign))
+				self.list4.append(getConfigListEntry(_("- Infolines"), LCD4linux.StandbyMoonInfos))
 				self.list4.append(getConfigListEntry(_("- Split Screen"), LCD4linux.StandbyMoonSplit))
 				self.list4.append(getConfigListEntry(_("- Color"), LCD4linux.StandbyMoonColor))
 				self.list4.append(getConfigListEntry(_("- Shadow Edges"), LCD4linux.StandbyMoonShadow))
@@ -9292,10 +9308,11 @@ class UpdateStatus(Screen):
 			_LsreftoString = None
 			if self.LsreftoString.startswith(("4097:0", "5001:0", "5002:0", "5003")):
 				_LsreftoString = self.LsreftoString.replace("4097:0", "1:0", 1).replace("5001:0", "1:0", 1).replace("5002:0", "1:0", 1).replace("5003:0", "1:0", 1)
-			epgcache = eEPGCache.getInstance()
-			if epgcache is not None:
-				self.LEventsNext = epgcache.lookupEvent(['RIBDT', (_LsreftoString or self.LsreftoString, 0, -1, 1440)])
-				self.LEventsDesc = epgcache.lookupEvent(['IBDCTSERNX', (_LsreftoString or self.LsreftoString, 0, -1)])
+				epgcache = eEPGCache.getInstance()
+				if epgcache is not None:
+					self.LEventsNext = epgcache.lookupEvent(['RIBDT', (_LsreftoString or self.LsreftoString, 0, -1, 1440)])
+					self.LEventsDesc = epgcache.lookupEvent(['IBDCTSERNX', (_LsreftoString or self.LsreftoString, 0, -1)])
+
 		else:
 			if GPjukeboxOK == True and cjukeboxevent.LastStatus != "":
 				self.LsreftoString = "4097:0:0:0:0:0:0:0:0:0:" + cjukeboxevent.CurrSource
@@ -10514,12 +10531,10 @@ http://inamidst.com/code/moonphase.py
 """
 
 
-def MoonPosition(now=None):
-	if now is None:
-		now = datetime.now()
+def MoonPosition(now=datetime.now()):
 	diff = now - datetime(2001, 1, 1)
-	days = float(diff.days) + (float(diff.seconds) / float(86400))
-	lunations = float("0.20439731") + (days * float("0.03386319269"))
+	days = diff.days + diff.seconds / 86400
+	lunations = 0.20439731 + days * 0.03386319269
 	return lunations % float(1)
 
 
@@ -10536,6 +10551,22 @@ def MoonPhase(pos):
 		6: _("Waning Crescent"),
 		7: _("Last Quarter")
 		}[int(index) & 7]
+
+
+"""
+series expansion of the moon orbital elements from Chapront und Chapront-Touzé
+Quelle: htps://de.wikipedia.org/wiki/Mondbahn
+http://articles.adsabs.harvard.edu/full/1994A%26A...282..663S
+"""
+
+
+def MoonDistance(now=datetime.utcnow()):
+    diff = now - datetime(2000, 1, 1, 12, 0, 0)
+    t = diff.days + diff.seconds / 86400
+    GM = (134.96341138 + 13.064992953630 * t) * math.pi / 180
+    DD = (297.85020420 + 12.190749117502 * t) * math.pi / 90
+    a = 385000.5584 - 20905.3550 * math.cos(GM) - 3699.1109 * math.cos(DD - GM) - 2955.9676 * math.cos(DD) - 569.9251 * math.cos(2 * GM)
+    return int(a + 0.5)
 
 ################################################################
 ################################################################
@@ -10872,8 +10903,6 @@ def LCD4linuxPIC(self, session):
 				Title = Title.replace(".mpg", "").replace(".vob", "").replace(".avi", "").replace(".divx", "").replace(".mv4", "").replace(".mkv", "").replace(".mp4", "").replace(".ts", "")
 			if cover == "" and os.path.isfile(GoogleCover):
 				cover = GoogleCover
-			if Title == "Pate":
-				Title = Title1
 			if ((cover == "" or (cover == GoogleCover and self.oldTitle != Title)) and str(LCD4linux.MPCoverDownload.value) != "0") or self.CoverCount > 0:
 				rmFile(GoogleCover)
 				self.oldTitle = Title
@@ -11422,7 +11451,7 @@ def LCD4linuxPIC(self, session):
 
 # Mondphase
 	def putMoon(workaround, draw, im):
-		(ConfigPos, ConfigSize, ConfigFontSize, ConfigAlign, ConfigSplit, ConfigColor, ConfigShadow, ConfigFont) = workaround
+		(ConfigPos, ConfigSize, ConfigFontSize, ConfigAlign, ConfigInfo, ConfigSplit, ConfigColor, ConfigShadow, ConfigFont) = workaround
 		ConfigPos = int(ConfigPos)
 		ConfigSize = int(ConfigSize)
 		MAX_W, MAX_H = self.im[im].size
@@ -11441,21 +11470,35 @@ def LCD4linuxPIC(self, session):
 					self.im[im].paste(pil_image, (POSX, ConfigPos), pil_image)
 				else:
 					self.im[im].paste(pil_image, (POSX, ConfigPos))
-				ConfigPos += ConfigSize
+				ConfigPos += ConfigSize * 0.95
 			except:
 				L4log("Error Moon")
 		if ConfigColor != "0":
 			font = ImageFont.truetype(ConfigFont, int(ConfigFontSize), encoding='unic')
-			w, h = getFsize(Code_utf8(PHASE), font)
-			if w > ConfigSize:
-				P = PHASE.split(" ")
-			else:
-				P = [PHASE]
+			P = []
+			INFOS = ""
+			if ConfigInfo[2] == "1":
+				INFOS += str(MoonDistance()) + " km"
+			if ConfigInfo[1] == "1":
+				INFOS += "-" + str((500 - abs(math.floor(POS * 1000 - 500))) / 5.0) + " %"
+			if INFOS != "":
+				w, h = getFsize(Code_utf8(INFOS), font)
+				if w > ConfigSize:
+					P.extend(INFOS.split("-"))
+				else:
+					INFOS = INFOS.replace('-', ' ')
+					P.extend([INFOS])
+			if ConfigInfo[0] == "1":
+				w, h = getFsize(Code_utf8(PHASE), font)
+				if w > ConfigSize:
+					P.extend(PHASE.split(" "))
+				else:
+					P.extend([PHASE])
 			for Pi in P:
 				w, h = getFsize(Code_utf8(Pi), font)
 				px = min(max(int(POSX + (ConfigSize / 2) - w / 2), 0), MAX_W - w)
 				ShadowText(draw, px, ConfigPos, Code_utf8(Pi), font, ConfigColor, ConfigShadow)
-				ConfigPos += h
+				ConfigPos += h * 0.9
 
 # Text File
 	def putTextFile(workaround, draw, im):
@@ -11726,8 +11769,8 @@ def LCD4linuxPIC(self, session):
 					pp += h
 				else:
 					pp += h - int(h2 / (5 - int(ConfigSpacing)))
-# Cover
 
+# Cover
 	def putCover(workaround, ConfigLCD, draw, im):
 		(ConfigPos, ConfigSize, ConfigSizeH, ConfigAlign, ConfigTransp, ConfigTrim) = workaround
 		ConfigPos = int(ConfigPos)
@@ -13406,12 +13449,12 @@ def LCD4linuxPIC(self, session):
 					Title = "%s - %s" % (MP3artist, MP3title)
 					if len(Title) < 5:
 						Title = ""
-			if Title == "" or Title == "Pate":
+			if Title == "":
 				Title = self.LgetName
 				if self.LsTagTitle is not None:
 					Title = self.LsTagTitle
 					Video = Title.endswith(".mpg") or Title.endswith(".vob") or Title.endswith(".avi") or Title.endswith(".divx") or Title.endswith(".mv4") or Title.endswith(".mkv") or Title.endswith(".mp4") or Title.endswith(".ts")
-					if Title == "" or Video == True or Title == "Pate":
+					if Title == "" or Video == True:
 						Title = self.LgetName
 						Title = Title.replace(".mpg", "").replace(".vob", "").replace(".avi", "").replace(".divx", "").replace(".mv4", "").replace(".mkv", "").replace(".mp4", "").replace(".ts", "")
 					if Title.find(" ") > 20 or (Title.find(" ") == -1 and len(Title) > 20):
@@ -14608,7 +14651,6 @@ def LCD4linuxPIC(self, session):
 				else:
 					L4log("detected VOD Media")
 					isMediaPlayer = "mp3"
-
 			elif "0:0:0:0:0:0:0:0:0:" in sref:
 				L4log("detected Video")
 				isMediaPlayer = "record"
@@ -14888,7 +14930,7 @@ def LCD4linuxPIC(self, session):
 				Para = LCD4linux.StandbyBox2x1.value, LCD4linux.StandbyBox2y1.value, LCD4linux.StandbyBox2x2.value, LCD4linux.StandbyBox2y2.value, LCD4linux.StandbyBox2Color.value, LCD4linux.StandbyBox2BackColor.value
 				Lput(LCD4linux.StandbyBox2LCD.value, LCD4linux.StandbyBox2.value, putBox, Para)
 # Moonphase
-				Para = LCD4linux.StandbyMoonPos.value, LCD4linux.StandbyMoonSize.value, LCD4linux.StandbyMoonFontSize.value, LCD4linux.StandbyMoonAlign.value, LCD4linux.StandbyMoonSplit.value, LCD4linux.StandbyMoonColor.value, LCD4linux.StandbyMoonShadow.value, getFont(LCD4linux.StandbyMoonFont.value)
+				Para = LCD4linux.StandbyMoonPos.value, LCD4linux.StandbyMoonSize.value, LCD4linux.StandbyMoonFontSize.value, LCD4linux.StandbyMoonAlign.value, LCD4linux.StandbyMoonInfos.value, LCD4linux.StandbyMoonSplit.value, LCD4linux.StandbyMoonColor.value, LCD4linux.StandbyMoonShadow.value, getFont(LCD4linux.StandbyMoonFont.value)
 				Lput(LCD4linux.StandbyMoonLCD.value, LCD4linux.StandbyMoon.value, putMoon, Para)
 # Meteo station
 				if wwwMeteo.find("current_conditions") > 1:
@@ -15093,7 +15135,7 @@ def LCD4linuxPIC(self, session):
 			Para = LCD4linux.MPBitratePos.value, LCD4linux.MPBitrateSize.value, LCD4linux.MPBitrateAlign.value, LCD4linux.MPBitrateSplit.value, LCD4linux.MPBitrateColor.value, LCD4linux.MPBitrateShadow.value, getFont(LCD4linux.MPBitrateFont.value)
 			Lput(LCD4linux.MPBitrateLCD.value, LCD4linux.MPBitrate.value, putBitrate, Para)
 # Moonphase
-			Para = LCD4linux.MPMoonPos.value, LCD4linux.MPMoonSize.value, LCD4linux.MPMoonFontSize.value, LCD4linux.MPMoonAlign.value, LCD4linux.MPMoonSplit.value, LCD4linux.MPMoonColor.value, LCD4linux.MPMoonShadow.value, getFont(LCD4linux.MPMoonFont.value)
+			Para = LCD4linux.MPMoonPos.value, LCD4linux.MPMoonSize.value, LCD4linux.MPMoonFontSize.value, LCD4linux.MPMoonAlign.value, LCD4linux.MPMoonInfos.value, LCD4linux.MPMoonSplit.value, LCD4linux.MPMoonColor.value, LCD4linux.MPMoonShadow.value, getFont(LCD4linux.MPMoonFont.value)
 			Lput(LCD4linux.MPMoonLCD.value, LCD4linux.MPMoon.value, putMoon, Para)
 # Online-Ping
 			Para = LCD4linux.MPPingPos.value, LCD4linux.MPPingSize.value, LCD4linux.MPPingAlign.value, LCD4linux.MPPingSplit.value, LCD4linux.MPPingColor.value, LCD4linux.MPPingType.value, LCD4linux.MPPingShow.value, LCD4linux.MPPingTimeout.value, (LCD4linux.MPPingName1.value, LCD4linux.MPPingName2.value, LCD4linux.MPPingName3.value, LCD4linux.MPPingName4.value, LCD4linux.MPPingName5.value), LCD4linux.MPPingShadow.value, getFont(LCD4linux.MPPingFont.value)
@@ -15243,7 +15285,7 @@ def LCD4linuxPIC(self, session):
 			Para = LCD4linux.Box2x1.value, LCD4linux.Box2y1.value, LCD4linux.Box2x2.value, LCD4linux.Box2y2.value, LCD4linux.Box2Color.value, LCD4linux.Box2BackColor.value
 			Lput(LCD4linux.Box2LCD.value, LCD4linux.Box2.value, putBox, Para)
 # Moonphase
-			Para = LCD4linux.MoonPos.value, LCD4linux.MoonSize.value, LCD4linux.MoonFontSize.value, LCD4linux.MoonAlign.value, LCD4linux.MoonSplit.value, LCD4linux.MoonColor.value, LCD4linux.MoonShadow.value, getFont(LCD4linux.MoonFont.value)
+			Para = LCD4linux.MoonPos.value, LCD4linux.MoonSize.value, LCD4linux.MoonFontSize.value, LCD4linux.MoonAlign.value, LCD4linux.MoonInfos.value, LCD4linux.MoonSplit.value, LCD4linux.MoonColor.value, LCD4linux.MoonShadow.value, getFont(LCD4linux.MoonFont.value)
 			Lput(LCD4linux.MoonLCD.value, LCD4linux.Moon.value, putMoon, Para)
 # Netatmo
 			Para = LCD4linux.NetAtmoPos.value, LCD4linux.NetAtmoSize.value, LCD4linux.NetAtmoAlign.value, LCD4linux.NetAtmoSplit.value, LCD4linux.NetAtmoStation.value, LCD4linux.NetAtmoModule.value, LCD4linux.NetAtmoModuleUser.value, LCD4linux.NetAtmoBasis.value, LCD4linux.NetAtmoName.value, LCD4linux.NetAtmoType.value, LCD4linux.NetAtmoType2.value, [LCD4linux.NetAtmoColor.value, LCD4linux.NetAtmoColor2.value, LCD4linux.NetAtmoColor3.value, LCD4linux.NetAtmoColor4.value, LCD4linux.NetAtmoColor5.value, LCD4linux.NetAtmoColor6.value, LCD4linux.NetAtmoColor7.value], LCD4linux.NetAtmoShadow.value, getFont(LCD4linux.NetAtmoFont.value)
@@ -15494,7 +15536,7 @@ def autostart(reason, **kwargs):
 			LCD4linux.Crash.value = True
 		CheckFstab()
 		TFTCheck(False)
-		if os.path.isfile(LCD4enigma2 + "skin_user.xml"):
+		if os.path.isfile(LCD4enigma2config + "skin_user.xml"):
 			xmlRead()
 			LCD4linux.xmlType01.value = False if xmlFind(1) == -1 else True
 			LCD4linux.xmlType02.value = False if xmlFind(2) == -1 else True
@@ -15508,11 +15550,11 @@ def autostart(reason, **kwargs):
 		if os.path.isfile(LCD4bin + "lcd4linux-start.sh"):
 			RunShell(LCD4bin + "lcd4linux-start.sh")
 		try:
-			if os.path.isfile(LCD4enigma2 + "lcd4fritz"):
+			if os.path.isfile(LCD4enigma2config + "lcd4fritz"):
 				L4logE("read Fritzlist")
-				for line in open(LCD4enigma2 + "lcd4fritz", "r").readlines():
+				for line in open(LCD4enigma2config + "lcd4fritz", "r").readlines():
 					exec("FritzList.append(%s)" % line)
-				rmFile(LCD4enigma2 + "lcd4fritz")
+				rmFile(LCD4enigma2config + "lcd4fritz")
 		except:
 				L4log("Error load Fritzlist")
 
@@ -15522,7 +15564,7 @@ def autostart(reason, **kwargs):
 		if len(FritzList) > 0:
 			L4logE("write Fritzlist")
 			try:
-				f = open(LCD4enigma2 + "lcd4fritz", "w")
+				f = open(LCD4enigma2config + "lcd4fritz", "w")
 				for i in FritzList:
 					f.write(str(i) + "\n")
 				f.close()
