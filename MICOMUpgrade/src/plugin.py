@@ -4,9 +4,8 @@ from . import _
 
 from boxbranding import getImageDistro
 import os
-import urllib
-
-from urllib import urlretrieve
+from six.moves.urllib.request import urlretrieve
+from six.moves import urllib
 
 from Plugins.Plugin import PluginDescriptor
 

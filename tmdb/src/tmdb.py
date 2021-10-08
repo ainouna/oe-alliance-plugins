@@ -12,6 +12,8 @@
 #######################################################################
 
 from __future__ import print_function
+from __future__ import absolute_import
+
 from Plugins.Plugin import PluginDescriptor
 from Components.ActionMap import *
 from Components.Label import Label
@@ -53,15 +55,15 @@ import shutil
 import json
 import skin
 from os import path, remove
-from twisted.web.client import getPage
 from twisted.web.client import downloadPage
 from twisted.web import client, error as weberror
 from twisted.internet import reactor
 from twisted.internet import defer
-from urllib import urlencode
-from __init__ import _
+import six
+from six.moves.urllib.parse import urlencode
+from .__init__ import _
 
-import tmdbsimple as tmdb
+from . import tmdbsimple as tmdb
 tmdb.API_KEY = 'd42e6b820a1541cc69ce789671feba39'
 
 
@@ -367,7 +369,7 @@ class tmdbScreen(Screen, HelpableScreen):
 			self.showCover("/usr/lib/enigma2/python/Plugins/Extensions/tmdb/pic/no_cover.png")
 		else:
 			if not fileExists(self.tempDir + id + ".jpg"):
-				downloadPage(url_cover, self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
+				downloadPage(six.ensure_binary(url_cover), self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
 			else:
 				self.showCover(self.tempDir + id + ".jpg")
 
@@ -795,11 +797,15 @@ class tmdbScreenMovie(Screen, HelpableScreen):
 		try:
 			description = json_data['overview']
 			description = description + "\n\n" + cast_string + "\n" + crew_string
-			self['description'].setText("%s" % description.encode('utf_8', 'ignore'))
+			if six.PY2:
+				description = description.encode('utf_8', 'ignore')
+			self['description'].setText("%s" % description)
 
 			movieinfo = "%s%s %s %s" % (str(genre_string), str(country_string), str(year), str(runtime))
 			fulldescription = subtitle + movieinfo + "\n\n" + description + "\n" + season
-			self['fulldescription'].setText("%s" % fulldescription.encode('utf_8', 'ignore'))
+			if six.PY2:
+				fulldescription = fulldescription.encode('utf_8', 'ignore')
+			self['fulldescription'].setText("%s" % fulldescription)
 			self.text = fulldescription
 		except:
 			description = "-"
@@ -995,7 +1001,7 @@ class tmdbScreenPeople(Screen, HelpableScreen):
 			self.showCover("/usr/lib/enigma2/python/Plugins/Extensions/tmdb/pic/no_cover.png")
 		else:
 			if not fileExists(self.tempDir + id + ".jpg"):
-				downloadPage(url_cover, self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
+				downloadPage(six.ensure_binary(url_cover), self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
 			else:
 				self.showCover(self.tempDir + id + ".jpg")
 
@@ -1231,7 +1237,7 @@ class tmdbScreenSeason(Screen, HelpableScreen):
 			self.showCover("/usr/lib/enigma2/python/Plugins/Extensions/tmdb/pic/no_cover.png")
 		else:
 			if not fileExists(self.tempDir + id + ".jpg"):
-				downloadPage(url_cover, self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
+				downloadPage(six.ensure_binary(url_cover), self.tempDir + id + ".jpg").addCallback(self.getData, self.tempDir + id + ".jpg").addErrback(self.dataError)
 			else:
 				self.showCover(self.tempDir + id + ".jpg")
 
